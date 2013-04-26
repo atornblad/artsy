@@ -54,14 +54,19 @@
         lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
         playing, mod, livininsanity, select;
 
-    // *** Disc tunnel effect (episode #?)
+    // *** Disc tunnel effect (renderer 0)
     // http://youtu.be/_5HacABiXUE?t=2m9s
+    // 0.0: Single disc going from near screen to far back and then to near screen again, without alpha effect
+    // 0.1: Entering tunnel (starting with 0 discs, building up to all ten), all white discs, all in the middle
+    // 0.2: Colored discs appearing (starting far back)
+    // 0.3: Bending tunnel - first upward, then far center spinning clockwise, ending by exiting
     
     var discIndexOffset = 0;
     var discZOffset = 0;
     var discRotation = 0;
-    var discFarA = 0;
-    var discFarR = halfWidth;
+    var discColoredMinIndex = 10;
+    var discFarA = 32768;
+    var discFarR = 0; // halfWidth;
     var discColors = [
         {r : 255, g : 255, b : 255},
         {r : 255, g : 64, b : 128},
@@ -83,15 +88,13 @@
         var discFarX = halfWidth + sinus[discFarA] * discFarR;
         var discFarY = halfHeight + sinus[(discFarA + 16384) % 65536] * discFarR;
         
-        discFarA = (discFarA + 100) % 65536;
-        
         for (var disc = 9; disc >= 0; --disc) {
             var z = 50 + 100 * disc + discZOffset; // From 50 to (50 + 10 * 10) = 1050 
             var alpha = 1 - (z - 50) / 1000;
             
             var centerX = halfWidth;
             var centerY = halfHeight;
-            var colorIndex = (disc + discIndexOffset) % 4;
+            var colorIndex = (disc >= discColoredMinIndex) ? (disc + discIndexOffset) % 4 : 0;
             var color = discColors[colorIndex];
             
             var discX = (centerX * alpha) + (discFarX * (1 - alpha));
@@ -131,13 +134,27 @@
             context.fill();
         }
         
-        var newDiscZOffset = (discZOffset + 91) % 100;
-        if (newDiscZOffset > discZOffset) {
+        var newDiscZOffset = (discZOffset - 9 * frameDiff);
+        while (newDiscZOffset < 0) {
             ++discIndexOffset;
+            newDiscZOffset += 100;
+            if (subId >= 2 && discColoredMinIndex > 0) {
+                --discColoredMinIndex;
+            }
         }
-        discZOffset = newDiscZOffset;
-        
-        discRotation = (discRotation + 65091) % 65536;
+        discZOffset = newDiscZOffset | 0;
+            
+        discRotation = (discRotation + 65536 - 471 * frameDiff) & 0xffff;
+
+        if (subId == 3) {
+            if (discFarR < halfWidth) {
+                discFarR += frameDiff;
+                // TODO: Make the bending effect "come at" the viewer instead of bending the entire existing tunnel
+            } else {
+                discFarR = halfWidth;
+            }
+            discFarA = (discFarA + 65536 - 100 * frameDiff) & 0xffff;
+        }
     };
     
     var renderers = [
@@ -147,9 +164,24 @@
         chapters = [
             {
                 from : 0,
-                to : 200000,
+                to : 4000,
                 rendererIndex : 0,
                 subId : 0
+            }, {
+                from : 4000,
+                to : 14000,
+                rendererIndex : 0,
+                subId : 1
+            }, {
+                from : 14000,
+                to : 22000,
+                rendererIndex : 0,
+                subId : 2
+            }, {
+                from : 22000,
+                to : 37000,
+                rendererIndex : 0,
+                subId : 3
             },
             false
         ],
@@ -267,7 +299,7 @@
                 select = document.createElement("SELECT");
                 for (var i = 0; i < chapters.length - 1; ++i) {
                     var chapter = chapters[i];
-                    var name = renderers[chapter.rendererIndex]("getName") + "(" + chapter.subId + ")";
+                    var name = renderers[chapter.rendererIndex]("getName") + ", part " + chapter.subId;
                     var option = document.createElement("OPTION");
                     option.value = i;
                     option.appendChild(document.createTextNode(name));
