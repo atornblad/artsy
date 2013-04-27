@@ -1,7 +1,10 @@
 (function() {
     // http://bitworld.bitfellas.org/demo.php?id=248
     
-    var dev = true;
+    // Minify, step 1: http://closure-compiler.appspot.com/home
+    // Minify, step 2: http://www.iteral.com/jscrush/
+    
+    var dev = false;
     var rnd = Math.random;
     var timeOffset = 0;
     var frameDiff = 1;
@@ -57,22 +60,37 @@
     // *** Disc tunnel effect (renderer 0)
     // http://youtu.be/_5HacABiXUE?t=2m9s
     // 0.0: Single disc going from near screen to far back and then to near screen again, without alpha effect
+    //      4000 ms!
     // 0.1: Entering tunnel (starting with 0 discs, building up to all ten), all white discs, all in the middle
     // 0.2: Colored discs appearing (starting far back)
     // 0.3: Bending tunnel - first upward, then far center spinning clockwise, ending by exiting
+    //      16000 ms!
     
     var discIndexOffset = 0;
     var discZOffset = 0;
     var discRotation = 0;
     var discColoredMinIndex = 10;
+    var discOffsetMinZ = 1050;
+    var discRenderMinIndex = 9;
+    var discRenderMaxIndex = 9;
     var discFarA = 32768;
-    var discFarR = 0; // halfWidth;
     var discColors = [
         {r : 255, g : 255, b : 255},
         {r : 255, g : 64, b : 128},
         {r : 255, g : 255, b : 255},
         {r : 96, g : 240, b : 255}
     ];
+    
+    var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Null";
+            }
+        }
+
+        context.fillStyle = "#240000"
+        context.fillRect(0, 0, width, height);
+    };
     
     var discTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -85,20 +103,28 @@
         context.fillStyle = "#240000"
         context.fillRect(0, 0, width, height);
         
-        var discFarX = halfWidth + sinus[discFarA] * discFarR;
-        var discFarY = halfHeight + sinus[(discFarA + 16384) % 65536] * discFarR;
+        var centerX = halfWidth;
+        var centerY = halfHeight;
+        var discFarX = centerX + largestHalf * sinus[discFarA];
+        var discFarY = centerY + largestHalf * sinus[(discFarA + 16384) % 65536];
         
-        for (var disc = 9; disc >= 0; --disc) {
-            var z = 50 + 100 * disc + discZOffset; // From 50 to (50 + 10 * 10) = 1050 
-            var alpha = 1 - (z - 50) / 1000;
+        var zOffset = (subId == 0) ? ((sinus[(chapterOffset * 32768 / 4000) & 0xffff]) * 800) : discZOffset;
+        var maxDisc = (subId == 0) ? 0 : discRenderMaxIndex;
+        var minDisc = (subId == 0) ? 0 : discRenderMinIndex;
+        
+        for (var disc = maxDisc; disc >= minDisc; --disc) {
+            var z = 50 + 100 * disc + zOffset; // From 50 to (50 + 10 * 10) = 1050 
+            var alpha = (subId == 0) ? 1 : 1 - (z - 50) / 1000;
             
-            var centerX = halfWidth;
-            var centerY = halfHeight;
+            var zForOffset = z - discOffsetMinZ;
+            var alphaForOffset = 1 - (zForOffset - 50) / 1000;
+            if (alphaForOffset > 1) alphaForOffset = 1;
+            
             var colorIndex = (disc >= discColoredMinIndex) ? (disc + discIndexOffset) % 4 : 0;
             var color = discColors[colorIndex];
             
-            var discX = (centerX * alpha) + (discFarX * (1 - alpha));
-            var discY = (centerY * alpha) + (discFarY * (1 - alpha));
+            var discX = (centerX * alphaForOffset) + (discFarX * (1 - alphaForOffset));
+            var discY = (centerY * alphaForOffset) + (discFarY * (1 - alphaForOffset));
                 
             context.beginPath();
             for (var a = 0; a <= 65536; a += 256) {
@@ -115,7 +141,7 @@
                 }
             }
 
-            for (var a = 65536; a >= 0; a -= 1024) {
+            for (var a = 65536; a >= 0; a -= 4096) {
                 var radius = halfWidth;
                 
                 var x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
@@ -141,46 +167,58 @@
             if (subId >= 2 && discColoredMinIndex > 0) {
                 --discColoredMinIndex;
             }
+            if (subId >= 1 && discRenderMinIndex > 0) {
+                --discRenderMinIndex;
+            }
+            if (subId == 3 && chapterOffset > (16000 - 1050 / 9 * 1000 / 60)) {
+                --discRenderMaxIndex;
+            }
         }
         discZOffset = newDiscZOffset | 0;
             
-        discRotation = (discRotation + 65536 - 471 * frameDiff) & 0xffff;
+        discRotation = (discRotation + 65536 - 473 * frameDiff) & 0xffff;
 
         if (subId == 3) {
-            if (discFarR < halfWidth) {
-                discFarR += frameDiff;
-                // TODO: Make the bending effect "come at" the viewer instead of bending the entire existing tunnel
+            if (discOffsetMinZ > 0) {
+                discOffsetMinZ -= 9 * frameDiff;
             } else {
-                discFarR = halfWidth;
+                discOffsetMinZ = 0;
+                discFarA = (discFarA + 65536 - 100 * frameDiff) & 0xffff;
             }
-            discFarA = (discFarA + 65536 - 100 * frameDiff) & 0xffff;
+            
         }
     };
     
     var renderers = [
+            nullRenderer,
             discTunnelRenderer
         ],
     
         chapters = [
             {
                 from : 0,
-                to : 4000,
+                to : 127500,
                 rendererIndex : 0,
                 subId : 0
             }, {
-                from : 4000,
-                to : 14000,
-                rendererIndex : 0,
+                from : 127500,
+                to : 131500,
+                rendererIndex : 1,
+                subId : 0
+            }, {
+                from : 131500,
+                to : 138500,
+                rendererIndex : 1,
                 subId : 1
             }, {
-                from : 14000,
-                to : 22000,
-                rendererIndex : 0,
+                from : 138500,
+                to : 146000,
+                rendererIndex : 1,
                 subId : 2
             }, {
-                from : 22000,
-                to : 37000,
-                rendererIndex : 0,
+                from : 146000,
+                to : 162000,
+                rendererIndex : 1,
                 subId : 3
             },
             false
@@ -310,6 +348,8 @@
                 }
                 mod.appendChild(select);
             } else {
+                document.getElementById("pressPlay").innerHTML = "Press play!";
+                livininsanity.currentTime = 126.5;
                 livininsanity.play();
             }
         };

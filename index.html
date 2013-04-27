@@ -4,23 +4,23 @@
     <title>Artsy (and slightly insane)</title>
     <meta name="viewport" content="width=720">
 <!--    <link rel="stylesheet" type="text/css" href="artsy.css"> -->
-    <script type="text/javascript" src="artsy.js"></script>
+    <script type="text/javascript" src="artsy.min.js"></script>
     <link rel="image_src" href="dump_og.png">
     <meta name="description" content="Pure JavaScript demo, inspired by the great Amiga demo Sanity Arte from 1993. More on http://lbrtw.com/">
 </head>
 <body>
     <div id="wrapper">
         <div id="mod">
-            <audio id="livininsanity" controls preload="auto" loop>
+            <audio id="livininsanity" controls preload="auto">
                 <source src="livin-insanity.ogg" type="audio/ogg">
                 <source src="livin-insanity.mp3" type="audio/mpeg">
             </audio>
-            <span id="pressPlay">Press play!</span>
+            <span id="pressPlay">Loading... Please wait!</span>
         </div>
         <canvas id="demo" width="640" height="512" style="width:640px;height:512px"></canvas>
     </div>
     <script type="text/javascript">
-
+        if (document.location.protocol) {
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', 'UA-37834700-1']);
   _gaq.push(['_setDomainName', 'lbrtw.com']);
@@ -31,6 +31,7 @@
     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
   })();
+        }
 
 </script>
 
