@@ -2,7 +2,7 @@
     // http://bitworld.bitfellas.org/demo.php?id=248
     
     // Minify, step 1: http://closure-compiler.appspot.com/home
-    // Minify, step 2: http://www.iteral.com/jscrush/
+    // Minify, step 2: https://github.com/Siorki/RegPack
     
     var dev = false;
     var rnd = Math.random;
@@ -58,7 +58,7 @@
         playing, mod, livininsanity, select;
 
     // *** Disc tunnel effect (renderer 0)
-    // http://youtu.be/_5HacABiXUE?t=2m9s
+    // http://youtu.be/_5HacABiXUE?t=2m10s
     // 0.0: Single disc going from near screen to far back and then to near screen again, without alpha effect
     //      4000 ms!
     // 0.1: Entering tunnel (starting with 0 discs, building up to all ten), all white discs, all in the middle
@@ -348,9 +348,17 @@
                 }
                 mod.appendChild(select);
             } else {
-                document.getElementById("pressPlay").innerHTML = "Press play!";
-                livininsanity.currentTime = 126.5;
-                livininsanity.play();
+                var loaded = function() {
+                    console.log("loadedmetadata");
+                    document.getElementById("pressPlay").innerHTML = "Press play!";
+                    livininsanity.currentTime = 126.5;
+                    livininsanity.play();
+                };
+                if (livininsanity.duration) {
+                    loaded();
+                } else {
+                    livininsanity.addEventListener("loadedmetadata", loaded, false);
+                }
             }
         };
     
