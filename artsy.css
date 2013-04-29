@@ -1,0 +1,14 @@
+html, body {
+    background: #000;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    color: #fff;
+}
+
+#wrapper {
+    width: 640px;
+    height: 512px;
+    margin: 0 auto 0 auto;
+}
