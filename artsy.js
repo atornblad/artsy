@@ -7,6 +7,20 @@
     // http://bitworld.bitfellas.org/demo.php?id=248
     // http://youtu.be/_5HacABiXUE
     
+    // Mr. Pet:
+    // Peter Cukierski, Germany
+    //
+    // Ra:
+    // ???, Manduel, France
+    //
+    // Chaos:
+    // Dierk Ohlerich, Germany
+    
+    // From the demo's end credits:
+    // This demo is copyrighted 1993 by Sanity.
+    // It is no freeware, shareware or PD, it is forbidden to copy it without permission.
+    // This permission is generally granted if you don't charge anything for it, not even a small copying fee!
+    
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
@@ -312,7 +326,12 @@
     // *** Bitmap tunnel effect (renderer 2)
     // http://youtu.be/_5HacABiXUE?t=0m11s
     
-    var tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData, tunnelTargetData;
+    var tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData
+    var tunnelTargetCanvas, tunnelTargetContext, tunnelTargetData;
+    var targetWidth = 320;
+    var targetHalfWidth = targetWidth / 2;
+    var targetHeight = (height - 128) / 2;
+    var targetHalfHeight = targetHeight / 2;
     
     var bitmapTunnelPrepare = function() {
         tunnelBitmapWidth = tunnelBitmap.width;
@@ -326,6 +345,12 @@
         tempContext.drawImage(tunnelBitmap, 0, 0, tunnelBitmapWidth, tunnelBitmapHeight);
         
         tunnelBitmapData = tempContext.getImageData(0, 0, tunnelBitmapWidth, tunnelBitmapHeight);
+        
+        tunnelTargetCanvas = create("CANVAS");
+        tunnelTargetCanvas.width = targetWidth;
+        tunnelTargetCanvas.height = targetHeight;
+        tunnelTargetContext = tunnelTargetCanvas.getContext("2d");
+        tunnelTargetData = tunnelTargetContext.createImageData(targetWidth, targetHeight);
     };
     
     var bitmapTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
@@ -333,12 +358,6 @@
             if (subId == "getName") {
                 return "Bitmap tunnel";
             }
-        }
-        
-        var targetHeight = height - 128;
-        var targetHalfHeight = (height - 128) / 2;
-        if (!tunnelTargetData) {
-            tunnelTargetData = context.createImageData(512, targetHeight);
         }
         
         var target = tunnelTargetData.data;
@@ -350,25 +369,27 @@
         context.fillStyle = "#46051e";
         context.fillRect(0, 50, width, 14);
         context.fillRect(0, height - 64, width, 14);
-//        context.fillStyle = "#000000";
-//        context.fillRect(0, 64, width, height - 128);
+        context.fillStyle = "#000000";
+        context.fillRect(0, 64, width, height - 128);
         
         var targetIndex = 0;
-        var targetIndex2 = (targetHeight - 1) * 2048;
+        var targetIndex2 = (targetHeight - 1) * targetWidth * 4;
         
-        for (var y = 0; y < targetHalfHeight - 32; ++y) {
+        var maxY = targetHalfHeight - 32;
+        
+        for (var y = 0; y < maxY; ++y) {
             // y = 0 => z är alltid sådant att faktorn blir /1
             // y = targetHalfHeight => z är oändligt långt bort
-            var inverseZFactor = targetHalfHeight / (targetHalfHeight - y);
+            var inverseZFactor = maxY / (maxY - y);
             var trueY = y * inverseZFactor + chapterOffset / 10;
             var alpha = 255 / inverseZFactor;
             
             var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
             
-            for (var x = -256; x < 256; ++x) {
+            for (var x = -targetHalfWidth; x < targetHalfWidth; ++x) {
                 var trueX = x * inverseZFactor;
                 
-                if (trueX < -256 || trueX > 256) {
+                if (trueX < -targetHalfWidth || trueX > targetHalfWidth) {
                     target[targetIndex++] = 0;
                     target[targetIndex++] = 0;
                     target[targetIndex++] = 0;
@@ -378,7 +399,7 @@
                     target[targetIndex2++] = 0;
                     target[targetIndex2++] = 255;
                 } else {
-                    var bitmapX = (((trueX + 256) >> 2) % 20) & 0xff;
+                    var bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xff;
                     var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX) * 4;
 
                     target[targetIndex++] = source[sourceIndex];
@@ -392,10 +413,12 @@
                 }
             }
             
-            targetIndex2 -= 512 * 8;
+            targetIndex2 -= targetWidth * 8;
         }
         
-        context.putImageData(tunnelTargetData, 64, 64);
+        tunnelTargetContext.putImageData(tunnelTargetData, 0, 0);
+        
+        context.drawImage(tunnelTargetCanvas, 0, 64, 640, 384);
         
         context.fillStyle = "#998888";
         context.font = "30px sans-serif";
@@ -721,11 +744,11 @@
             subId : 0
         }, {
             from : 82500,
-            to : 92500,
+            to : 91000,
             rendererIndex : 5,
             subId : 2
         }, {
-            from : 92500,
+            from : 91000,
             to : 97500,
             rendererIndex : 5,
             subId : 3
