@@ -26,6 +26,7 @@
     
     var dev = false;
     var autoplay = true;
+    var showFrame = false;
     var rnd = Math.random;
     var create = function(elementName) { return document.createElement(elementName); };
     var timeOffset = 0;
@@ -75,9 +76,9 @@
     var halfHeight = height / 2;
     var largestHalf = Math.max(halfWidth, halfHeight);
     
-/*    var smoothComplete = function(chapterComplete) {
+    var smoothComplete = function(chapterComplete) {
         return (1 - Math.cos(chapterComplete * pi)) / 2;
-    };*/
+    };
 
     var canvas, context, sinus, currentQuality,
         lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
@@ -193,7 +194,7 @@
                 break;
             case 2:
                 context.globalAlpha = chapterComplete > 0.25 ? (4/3 - chapterComplete / 3 * 4) :
-                                      chapterComplete < 0.05 ? (chapterComplete * 20) :
+                                      chapterComplete < 0.1 ? (chapterComplete * 10) :
                                       1;
                 var w = whaaaaat.width;
                 var h = whaaaaat.height;
@@ -333,6 +334,10 @@
     var targetHeight = (height - 128) / 2;
     var targetHalfHeight = targetHeight / 2;
     
+    var floorScript = "    aaa bbb ccaaddddbbbbaaaacccc aaabbbdddbbbccc aa bbddddccccddbbbbabbbbcccc";
+    
+    var floorOffsets;
+    
     var bitmapTunnelPrepare = function() {
         tunnelBitmapWidth = tunnelBitmap.width;
         tunnelBitmapHeight = tunnelBitmap.height;
@@ -351,6 +356,17 @@
         tunnelTargetCanvas.height = targetHeight;
         tunnelTargetContext = tunnelTargetCanvas.getContext("2d");
         tunnelTargetData = tunnelTargetContext.createImageData(targetWidth, targetHeight);
+        
+        // floorScript and roofScript MUST be the exact same length
+        floorOffsets = [];
+        for (var i = 0; i < floorScript.length; ++i) {
+            var tileLetter = floorScript[i];
+            if (tileLetter == ' ') {
+                floorOffsets.push(false);
+            } else {
+                floorOffsets.push((tileLetter.charCodeAt(0) - 97) * 20);
+            }
+        }
     };
     
     var bitmapTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
@@ -377,38 +393,73 @@
         
         var maxY = targetHalfHeight - 32;
         
+        var veer, veerDist = 0;
+        if (chapterOffset < 4000) {
+            veer = 0;
+        } else if (chapterOffset < 10000) {
+            veer = 0.2;
+            veerDist = (6000 - chapterOffset) / 4;
+        } else if (chapterOffset < 12000) {
+            veer = (12000 - chapterOffset) / 10000;
+            veerDist = 0;
+        } else if (chapterOffset < 18000) {
+            veer = -0.2;
+            veerDist = (14000 - chapterOffset) / 4;
+        } else if (chapterOffset < 20000) {
+            veer = (chapterOffset - 20000) / 10000;
+            veerDist = 0;
+        } else if (chapterOffset < 26000) {
+            veer = 0.2;
+            veerDist = (22000 - chapterOffset) / 4;
+        } else if (chapterOffset < 28000) {
+            veer = (28000 - chapterOffset) / 10000;
+            veerDist = 0;
+        } else {
+            veer = 0;
+        }
+        
+        if (veerDist < 0) veerDist = 0;
+        
         for (var y = 0; y < maxY; ++y) {
             // y = 0 => z är alltid sådant att faktorn blir /1
             // y = targetHalfHeight => z är oändligt långt bort
             var inverseZFactor = maxY / (maxY - y);
-            var trueY = y * inverseZFactor + chapterOffset / 10;
+            var transformedY = y * inverseZFactor;
+            if (transformedY < 500) {
+            var trueY = transformedY + chapterOffset / 4;
             var alpha = 255 / inverseZFactor;
             
-            var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
+            var veerX = (transformedY > veerDist) ? (transformedY - veerDist) * veer : 0;
             
+            var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
+            var tileBitmapOffsetX = (tileScriptPos >= 0) ? floorOffsets[tileScriptPos] : false;
+            var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
+            } else {
+                var tileBitmapOffsetX = false;
+            }
             for (var x = -targetHalfWidth; x < targetHalfWidth; ++x) {
-                var trueX = x * inverseZFactor;
+                var trueX = (x + veerX) * inverseZFactor;
                 
-                if (trueX < -targetHalfWidth || trueX > targetHalfWidth) {
-                    target[targetIndex++] = 0;
-                    target[targetIndex++] = 0;
+                if (trueX < -targetHalfWidth || trueX > targetHalfWidth || tileBitmapOffsetX === false || tileBitmapOffsetX === undefined) {
+                    target[targetIndex++] = //0;
+                    target[targetIndex++] = //0;
                     target[targetIndex++] = 0;
                     target[targetIndex++] = 255;
-                    target[targetIndex2++] = 0;
-                    target[targetIndex2++] = 0;
+                    target[targetIndex2++] = //0;
+                    target[targetIndex2++] = //0;
                     target[targetIndex2++] = 0;
                     target[targetIndex2++] = 255;
                 } else {
-                    var bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xff;
-                    var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX) * 4;
+                    var bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xfff;
+                    var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX + tileBitmapOffsetX) * 4;
 
-                    target[targetIndex++] = source[sourceIndex];
+                    target[targetIndex++] = //source[sourceIndex];
                     target[targetIndex2++] = source[sourceIndex++];
-                    target[targetIndex++] = source[sourceIndex];
+                    target[targetIndex++] = //source[sourceIndex];
                     target[targetIndex2++] = source[sourceIndex++];
-                    target[targetIndex++] = source[sourceIndex];
+                    target[targetIndex++] = //source[sourceIndex];
                     target[targetIndex2++] = source[sourceIndex++];
-                    target[targetIndex++] = alpha;
+                    target[targetIndex++] = //alpha;
                     target[targetIndex2++] = alpha;
                 }
             }
@@ -749,7 +800,6 @@
             }
         }
         
-        console.log(totalStars);
         return result;
     })();
     
@@ -777,11 +827,19 @@
         }
     }
     
+    var phaseXStarts = 14000;
+    var beatStarts = 15100; // 15.1 seconds into subId 1
+    
     var starsRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Stars";
             }
+        }
+        
+        var fade = 1;
+        if (chapterComplete > 0.95) {
+            fade = (1 - chapterComplete) * 20;
         }
         
         context.fillStyle = "#000000";
@@ -804,9 +862,28 @@
             case 1:
                 // random stars
                 coords = starsRandomCoords;
+                offsetZ = 0;
+                //phaseZ = sinus[chapterOffset] * 2048;
                 phaseX = phaseY = phaseZ = offsetZ = 0;
                 maxStars = chapterOffset / 4;
                 phaseZ = -chapterOffset / 10;
+                var weight = 0;
+                if (chapterOffset > 6000) {
+                    weight = 1;
+                } else if (chapterOffset > 2000) {
+                    weight = smoothComplete((chapterOffset - 2000) / 4000);
+                }
+                phaseZ += weight * sinus[(chapterOffset * 5 + 30000) & 0xffff] * 3072;
+                phaseY = weight * sinus[(chapterOffset * 4 + 54000) & 0xffff] * 4096;
+                
+                if (chapterOffset > phaseXStarts + 4000) {
+                    weight = 1;
+                } else if (chapterOffset > phaseXStarts) {
+                    weight = smoothComplete((chapterOffset - phaseXStarts) / 4000);
+                } else {
+                    weight = 0;
+                }
+                phaseX = weight * sinus[((chapterOffset - phaseXStarts) * 3) & 0xffff] * 3072;
                 break;
         }
         
@@ -814,8 +891,8 @@
             maxStars = coords.length;
         }
         
-        while (phaseZ < -512) phaseZ += 1024;
-        while (phaseZ > 512) phaseZ -= 1024;
+//        while (phaseZ < -512) phaseZ += 1024;
+//        while (phaseZ > 512) phaseZ -= 1024;
         
         context.fillStyle = "#ffffff";
         
@@ -838,19 +915,50 @@
                 
                 if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
                     var alpha = (1000 - z) / 2000;
-                    context.globalAlpha = alpha;
+                    context.globalAlpha = alpha * fade;
                     context.fillRect(screenX, screenY, 2, 2);
                 }
             }
         }
         
-        if (subId == 1) {
-            context.fillStyle = "#998888";
-            context.font = "30px sans-serif";
-            context.textAlign = "center";
-            context.textBaseline = "center";
-            context.globalAlpha = 0.75;
-            context.fillText("To do: Finish star effect", halfWidth, halfHeight);
+        var beatOffset = chapterOffset - beatStarts;
+        
+        if (beatOffset >= 0) {
+            var beatNumber = (beatOffset / 480 / 8) | 0;
+            beatOffset = (beatOffset % 480) | 0;
+            
+            if (beatOffset < 240) {
+                context.globalAlpha = 1;
+                context.textAlign = "left";
+                context.textBaseline = "top";
+            
+                switch (beatNumber) {
+                    case 0:
+                        context.fillStyle = "#999999";
+                        context.font = "40px sans-serif";
+                        context.fillText("Anders Tornblad", 10, 10);
+                        context.fillStyle = "#666666";
+                        context.font = "30px sans-serif";
+                        context.fillText("JavaScript", 10, 55);
+                        break;
+                    case 1:
+                        context.fillStyle = "#999999";
+                        context.font = "40px sans-serif";
+                        context.fillText("Olivi\u00e9r Bechard (RA)", 10, 10);
+                        context.fillStyle = "#666666";
+                        context.font = "30px sans-serif";
+                        context.fillText("graphics", 10, 55);
+                        break;
+                    case 2:
+                        context.fillStyle = "#999999";
+                        context.font = "40px sans-serif";
+                        context.fillText("Fr\u00e9d\u00e9ric Motte (Moby)", 10, 10);
+                        context.fillStyle = "#666666";
+                        context.font = "30px sans-serif";
+                        context.fillText("music", 10, 55);
+                        break;
+                }
+            }
         }
     }
     
@@ -995,7 +1103,7 @@
             var currentChapter = dev ? chapters[select.value] : chapters[currentChapterIndex];
             if (dev) {
                 currentChapter.from = 0;
-                currentChapter.to = 99999999;
+                currentChapter.to = 30000;
             }
             if (currentChapter && (timeOffset >= currentChapter.to)) {
                 ++currentChapterIndex;
@@ -1029,7 +1137,7 @@
             }
             currentQuality = newQuality;
             
-            if (dev) {
+            if (showFrame || dev) {
                 context.fillStyle = "#000000";
                 context.fillRect(0, 0, 60, 13);
                 context.fillStyle = "#ffffff";
