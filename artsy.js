@@ -192,7 +192,7 @@
                 }
                 break;
             case 2:
-                context.globalAlpha = chapterComplete > 0.5 ? (2 - 2 * chapterComplete) :
+                context.globalAlpha = chapterComplete > 0.25 ? (4/3 - chapterComplete / 3 * 4) :
                                       chapterComplete < 0.05 ? (chapterComplete * 20) :
                                       1;
                 var w = whaaaaat.width;
@@ -425,10 +425,6 @@
         context.textAlign = "center";
         context.textBaseline = "center";
         context.fillText("To do: Finish bitmap tunnel effect", halfWidth, halfHeight);
-        context.font = "20px sans-serif";
-        var totalTime = chapterOffset / chapterComplete;
-        var timeLeft = totalTime - chapterOffset;
-        context.fillText((timeLeft / 1000).toFixed(1) + " seconds to go", halfWidth, halfHeight + 30);
     };
     
     // *** Dead chicken effect (renderer 3)
@@ -679,6 +675,185 @@
         }
     };
     
+    /// *** Stars (renderer 6)
+    
+    // 6.0: HTML5 logo coming towards the viewer
+    
+    var html5Coords = (function() {
+        var lines = [
+            { x1 : 31, y1 : 0, x2 : 481, y2: 0},
+            { x1 : 481, y1 : 0, x2 : 440, y2 : 460},
+            { x1 : 440, y1 : 460, x2 : 256, y2 : 511},
+            { x1 : 256, y1 : 511, x2 : 71, y2 : 460},
+            { x1 : 71, y1 : 460, x2 : 31, y2 : 0},
+            
+            { x1 : 256, y1 : 37, x2 : 440, y2 : 37},
+            { x1 : 440, y1 : 37, x2 : 405, y2 : 431},
+            { x1 : 405, y1 : 431, x2 : 256, y2 : 472},
+            { x1 : 256, y1 : 472, x2 : 256, y2 : 413},
+            { x1 : 256, y1 : 355, x2 : 256, y2 : 264},
+            { x1 : 256, y1 : 208, x2 : 256, y2 : 150},
+            { x1 : 256, y1 : 94, x2 : 256, y2 : 37},
+            
+            { x1 : 114, y1 : 94, x2 : 397, y2 : 94},
+            { x1 : 397, y1 : 94, x2 : 391, y2 : 150},
+            { x1 : 391, y1 : 150, x2 : 175, y2 : 150},
+            { x1 : 175, y1 : 150, x2 : 180, y2 : 208},
+            { x1 : 180, y1 : 208, x2 : 386, y2 : 208},
+            { x1 : 386, y1 : 208, x2 : 371, y2 : 381},
+            { x1 : 371, y1 : 381, x2 : 256, y2 : 413},
+            { x1 : 256, y1 : 413, x2 : 140, y2 : 381},
+            { x1 : 140, y1 : 381, x2 : 132, y2 : 293},
+            { x1 : 132, y1 : 293, x2 : 188, y2 : 293},
+            { x1 : 188, y1 : 293, x2 : 192, y2 : 338},
+            { x1 : 192, y1 : 338, x2 : 256, y2 : 355},
+            { x1 : 256, y1 : 355, x2 : 318, y2 : 338},
+            { x1 : 318, y1 : 338, x2 : 325, y2 : 264},
+            { x1 : 325, y1 : 264, x2 : 129, y2 : 264},
+            { x1 : 129, y1 : 264, x2 : 114, y2 : 94}
+        ];
+        
+        var result = [];
+        
+        var lineIndex = 0;
+        var totalStars = 0;
+        var distSteps = 80;
+        var dist = 0;
+        var firstTimeAround = true;
+        while (distSteps > 10) {
+            var line = lines[lineIndex];
+            var totalDist = Math.sqrt((line.x2-line.x1)*(line.x2-line.x1) + (line.y2-line.y1)*(line.y2-line.y1));
+            if (firstTimeAround && dist == 0) {
+                dist = 0.1;
+            } else if (dist == 0) {
+                dist = distSteps / 2;
+            } else {
+                dist += distSteps;
+            }
+            if (dist > totalDist) {
+                dist = 0;
+                lineIndex = (lineIndex + 1) % lines.length;
+                if (lineIndex == 0) {
+                    if (firstTimeAround) {
+                        firstTimeAround = false;
+                    } else {
+                        distSteps /= 2;
+                    }
+                }
+            } else {
+                var x = line.x1 - 256 + (dist / totalDist * (line.x2 - line.x1));
+                var y = line.y1 - 256 + (dist / totalDist * (line.y2 - line.y1));
+                var z = Math.abs(x) * 0.1;
+                result.push({x : x, y : y, z : z});
+                ++totalStars;
+            }
+        }
+        
+        console.log(totalStars);
+        return result;
+    })();
+    
+    var starsRandomCoords = (function() {
+        var result = [];
+        for (var i = 0; i < 1000; ++i) {
+            result.push(
+                        {
+                            x : rnd() * 1024 - 512,
+                            y : rnd() * 1024 - 512,
+                            z : rnd() * 1024 - 512
+                        });
+        }
+        
+        return result;
+    })();
+    
+    var limitStarCoord = function(composant) {
+        if (composant > 512) {
+            return composant - 1024 * Math.floor((composant + 512) / 1024);
+        } else if (composant < -512) {
+            return composant + 1024 * Math.floor((512 - composant) / 1024);
+        } else {
+            return composant;
+        }
+    }
+    
+    var starsRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Stars";
+            }
+        }
+        
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        
+        var coords, phaseX, phaseY, phaseZ, offsetZ, maxStars;
+        
+        switch (subId) {
+            case 0:
+                // html5 logo
+                coords = html5Coords;
+                phaseX = phaseY = phaseZ = 0;
+                if (dev) {
+                    chapterOffset %= 4000;
+                    chapterComplete = chapterOffset / 4000;
+                }
+                offsetZ = 1024 - chapterComplete * 2048;
+                maxStars = chapterOffset / 4;
+                break;
+            case 1:
+                // random stars
+                coords = starsRandomCoords;
+                phaseX = phaseY = phaseZ = offsetZ = 0;
+                maxStars = chapterOffset / 4;
+                phaseZ = -chapterOffset / 10;
+                break;
+        }
+        
+        if (maxStars > coords.length) {
+            maxStars = coords.length;
+        }
+        
+        while (phaseZ < -512) phaseZ += 1024;
+        while (phaseZ > 512) phaseZ -= 1024;
+        
+        context.fillStyle = "#ffffff";
+        
+        for (var i = 0; i < maxStars; ++i) {
+            var star = coords[i];
+            
+            // Phase
+            var x = limitStarCoord(star.x + phaseX);
+            var y = limitStarCoord(star.y + phaseY);
+            var z = limitStarCoord(star.z + phaseZ);
+            
+            // Offset:
+            z += offsetZ;
+            
+            if (z > -1000 && z < 1000) {
+                var zMultFactor = 512 / (z + 1024);
+                
+                var screenX = halfWidth + zMultFactor * x;
+                var screenY = halfHeight + zMultFactor * y;
+                
+                if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
+                    var alpha = (1000 - z) / 2000;
+                    context.globalAlpha = alpha;
+                    context.fillRect(screenX, screenY, 2, 2);
+                }
+            }
+        }
+        
+        if (subId == 1) {
+            context.fillStyle = "#998888";
+            context.font = "30px sans-serif";
+            context.textAlign = "center";
+            context.textBaseline = "center";
+            context.globalAlpha = 0.75;
+            context.fillText("To do: Finish star effect", halfWidth, halfHeight);
+        }
+    }
+    
     var renderers = [
             introTextRenderer,
             discTunnelRenderer,
@@ -686,10 +861,11 @@
             deadChickenRenderer,
             globeRenderer,
             simpleImageRenderer,
+            starsRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 6,
+    nullRendererIndex = 7,
 
     chapters = [
         {
@@ -744,19 +920,24 @@
             subId : 0
         }, {
             from : 82500,
-            to : 91000,
+            to : 90000,
             rendererIndex : 5,
             subId : 2
         }, {
-            from : 91000,
-            to : 97500,
+            from : 90000,
+            to : 94000,
             rendererIndex : 5,
             subId : 3
         }, {
-            from : 97500,
-            to : 128500,
-            rendererIndex : nullRendererIndex,
+            from : 94000,
+            to : 98000,
+            rendererIndex : 6,
             subId : 0
+        }, {
+            from : 98000,
+            to : 128500,
+            rendererIndex : 6,
+            subId : 1
         }, {
             from : 128500,
             to : 132500,
