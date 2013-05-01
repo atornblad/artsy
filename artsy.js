@@ -729,6 +729,7 @@
     /// *** Stars (renderer 6)
     
     // 6.0: HTML5 logo coming towards the viewer
+    // 6.1: Starfield
     
     var html5Coords = (function() {
         var lines = [
@@ -873,8 +874,8 @@
                 } else if (chapterOffset > 2000) {
                     weight = smoothComplete((chapterOffset - 2000) / 4000);
                 }
-                phaseZ += weight * sinus[(chapterOffset * 5 + 30000) & 0xffff] * 3072;
-                phaseY = weight * sinus[(chapterOffset * 4 + 54000) & 0xffff] * 4096;
+                phaseZ += weight * sinus[(chapterOffset * 5 + 30000) & 0xffff] * 2048;
+                phaseY = weight * sinus[(chapterOffset * 2 + 54000) & 0xffff] * 1024;
                 
                 if (chapterOffset > phaseXStarts + 4000) {
                     weight = 1;
@@ -960,7 +961,160 @@
                 }
             }
         }
-    }
+    };
+    
+    // *** Fat Buddha scene (renderer 7)
+    
+    var buddha, buddhaBits, buddhaCanvas, buddhaContext, buddhaData;
+    var buddhaSceneWidth = 100, buddhaSceneHeight = 100;
+    var buddhaFinalScale = 4, buddhaHalfFinalScale = buddhaFinalScale / 2;
+    
+    var buddhaPrepare = function() {
+        // Fetch bits from buddhaBits
+        var tempCanvas = create("CANVAS");
+        tempCanvas.width = tempCanvas.height = 128;
+        var tempContext = tempCanvas.getContext("2d");
+        tempContext.drawImage(buddha, 0, 0);
+        buddhaBits = tempContext.getImageData(0, 0, 128, 128);
+        
+        // Draw them onto buddhaCanvas, and then blit using drawImage onto the main canvas, stretched
+        buddhaCanvas = create("CANVAS");
+        buddhaCanvas.width = buddhaSceneWidth;
+        buddhaCanvas.height = buddhaSceneHeight;
+        buddhaContext = buddhaCanvas.getContext("2d");
+        buddhaData = buddhaContext.createImageData(buddhaSceneWidth, buddhaSceneHeight);
+    };
+    
+    var fatBuddhaRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Fat Buddha";
+            }
+        }
+        
+        // Clear scene
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        
+        var angle1 = 65536 * sinus[(smoothComplete(chapterComplete) * 65536) & 0xffff];
+        var scale1 = 1;
+        
+        var angle2 = smoothComplete(chapterComplete) * 65536 * 3;
+        var scale2 = (chapterComplete < 0.7) ? 0.25 : smoothComplete((chapterComplete - 0.7) / 0.3) * 3.75 + 0.25
+        
+        var offsetX1 = sinus[angle2 & 65535] * 80 + 50;
+        var offsetY1 = sinus[(angle2 + 23000) & 65535] * 72;
+        
+        var offsetX2 = sinus[angle1 & 65535] * 50 + 70;
+        var offsetY2 = -20;
+        
+        // Fetch bits from buddhaBits, draw onto buddhaCanvas (via buddhaData);
+        var sourceData = buddhaBits.data;
+        var targetData = buddhaData.data;
+        var targetIndex = 0;
+        for (var y = 0; y < buddhaSceneHeight; ++y) {
+            for (var x = 0; x < buddhaSceneWidth; ++x) {
+                var yy = y - buddhaSceneHeight / 2;
+                var xx = x - buddhaSceneWidth / 2;
+                
+                var ya1 = yy * sinus[(angle1 + 16384) & 65535] + xx * sinus[angle1 & 65535];
+                var xa1 = xx * sinus[(angle1 + 16384) & 65535] - yy * sinus[angle1 & 65535];
+                xa1 -= offsetX1;
+                ya1 -= offsetY1;
+                ya1 /= scale1;
+                xa1 /= scale1;
+                
+                var ya2 = yy * sinus[(angle2 + 16384) & 65535] + xx * sinus[angle2 & 65535];
+                var xa2 = xx * sinus[(angle2 + 16384) & 65535] - yy * sinus[angle2 & 65535];
+                ya2 /= scale2;
+                xa2 /= scale2;
+                xa2 -= offsetX2;
+                ya2 -= offsetY2;
+                
+                var secondWeight = (x * 1.5 + y * 1.5 - buddhaSceneWidth - buddhaSceneHeight) / ((buddhaSceneWidth + buddhaSceneHeight) * 2) + chapterComplete * 3 - 1;
+                
+                if (secondWeight < 0) secondWeight = 0;
+                if (secondWeight > 1) secondWeight = 1;
+                
+                var x2 = xa1 * (1 - secondWeight) + xa2 * secondWeight;
+                var y2 = ya1 * (1 - secondWeight) + ya2 * secondWeight;
+                
+                x2 = x2 & 127;
+                y2 = y2 & 127;
+                var sourceIndex = (y2 * 128 + x2) * 4;
+                
+                targetData[targetIndex++] = sourceData[sourceIndex++];
+                targetData[targetIndex++] = sourceData[sourceIndex++];
+                targetData[targetIndex++] = sourceData[sourceIndex++];
+                targetData[targetIndex++] = 255;
+            }
+        }
+        
+        // Blit buddhaData to buddhaCanvas
+        buddhaContext.putImageData(buddhaData, 0, 0);
+        
+        // Stretch and draw buddhaCanvas onto main canvas
+        context.drawImage(buddhaCanvas, halfWidth - buddhaSceneWidth * buddhaHalfFinalScale, halfHeight - buddhaSceneHeight * buddhaHalfFinalScale, buddhaSceneWidth * buddhaFinalScale, buddhaSceneHeight * buddhaFinalScale);
+        
+        if (chapterComplete > 0.95) {
+            context.fillStyle = "rgba(0,0,0," + (chapterComplete * 20 - 19).toFixed(3) + ")";
+            context.fillRect(0, 0, width, height);
+        }
+    };
+    
+    // *** Hail Salvadore (renderer 8)
+    
+    // 8.0: Hail Salvadore...
+    // 8.1: ...true artists
+    
+    var hailSalvadore, trueArtists;
+    
+    var hailSalvadoreData = [
+        { from: 0,    x: 78,  y: 0,   w: 131, h: 81 }, // Head
+        { from: 800,  x: 0,   y: 91,  w: 69,  h: 22 }, // hail
+        { from: 1200, x: 85,  y: 91,  w: 216, h: 22 }, // salvadore
+        { from: 2100, x: 63,  y: 119, w: 91,  h: 22 }, // who
+        { from: 2700, x: 170, y: 119, w: 76,  h: 22 }, // has
+        { from: 2900, x: 74,  y: 148, w: 154, h: 28 }, // proved
+        { from: 3100, x: 21,  y: 181, w: 93,  h: 22 }, // that
+        { from: 3400, x: 128, y: 181, w: 151, h: 23 }  // loonies
+    ];
+    
+    var trueArtistsData = [
+        { from: 0,    x: 67,  y: 0,   w: 70,  h: 16  }, // are
+        { from: 800,  x: 10,  y: 34,  w: 48,  h: 18  }, // the
+        { from: 1100, x: 0,   y: 53,  w: 60,  h: 35  }, // only (left part)
+        { from: 1100, x: 63,  y: 41,  w: 45,  h: 47  }, // only (right part)
+        { from: 1900, x: 119, y: 46,  w: 84,  h: 36  }, // true
+        { from: 2300, x: 6,   y: 102, w: 216, h: 43  }, // artists
+        { from: 2900, x: 41,  y: 154, w: 128, h: 100 }  // Head
+    ];
+    
+    var hailSalvadoreRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Hail Salvadore";
+            }
+        }
+        
+        // Clear scene
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        
+        var data = subId ? trueArtistsData : hailSalvadoreData;
+        var img = subId ? trueArtists : hailSalvadore;
+        var offsetY = subId ? 0 : 60;
+        var offsetX = halfWidth - img.width / 2;
+        
+        context.globalAlpha = (chapterComplete < 0.9) ? 1 : (10 - chapterComplete * 10);
+        
+        for (var i = 0; i < data.length; ++i) {
+            var item = data[i];
+            if (chapterOffset > item.from) {
+                context.drawImage(img, item.x, item.y, item.w, item.h, item.x + offsetX, item.y * 2 + offsetY, item.w, item.h * 2);
+            }
+        }
+    };
     
     var renderers = [
             introTextRenderer,
@@ -970,10 +1124,12 @@
             globeRenderer,
             simpleImageRenderer,
             starsRenderer,
+            fatBuddhaRenderer,
+            hailSalvadoreRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 7,
+    nullRendererIndex = 9,
 
     chapters = [
         {
@@ -1068,9 +1224,19 @@
             subId : 3
         }, {
             from : 163000,
-            to : 188000,
-            rendererIndex : nullRendererIndex,
+            to : 178300,
+            rendererIndex : 7,
             subId : 0
+        }, {
+            from : 178300,
+            to : 182300,
+            rendererIndex : 8,
+            subId : 0
+        }, {
+            from : 182300,
+            to : 188000,
+            rendererIndex : 8,
+            subId : 1
         },
         false
     ],
@@ -1092,6 +1258,7 @@
         prepareGlobe();
         prepareSimpleImages();
         bitmapTunnelPrepare();
+        buddhaPrepare();
     },
     
     animFrame = function(time) {
@@ -1263,7 +1430,7 @@
         addToLoading(image);
         
         image.addEventListener("load", onImageLoad, false);
-        image.src = src;
+        image.src = src + "?ts=" + now();
         
         return image;
     },
@@ -1332,6 +1499,9 @@
         tunnelBitmap = loadImage("tunnelBits.png");
         einstein = loadImage("einstein.png");
         sanity2 = loadImage("sanity2.png");
+        buddha = loadImage("seventies.png");
+        hailSalvadore = loadImage("hailSalvadore.png");
+        trueArtists = loadImage("trueArtists.png");
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -1341,7 +1511,10 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (i == 0) {
+//                if (i == 0) {
+//                    option.selected = true;
+//                }
+                if (chapter.rendererIndex == 7) {
                     option.selected = true;
                 }
                 select.appendChild(option);
