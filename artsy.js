@@ -24,6 +24,13 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
+    // TODO:
+    // Globe: Dra my own doodle overlay
+    // Buddha: Make the (x+y) warp move slower
+    // Buddha: Add some text
+    // Bitmap tunnel: Experiment with slopes, but don't put in too much effort
+    // Bitmap tunnel: Add hanging walls and whole walls (in a way that actually speeds up rendering), and side bars (in a fast way)
+    
     var dev = false;
     var autoplay = true;
     var showFrame = false;
@@ -158,7 +165,7 @@
                     context.fillText("O F", -width, 270);
                 }
                 if (chapterOffset >= 3900) {
-                    context.font = "100px sans-serif";
+                    context.font = "bold 100px sans-serif";
                     context.fillText("NOSTRADAMUS", -width, 360);
                 }
                 break;
@@ -588,7 +595,7 @@
         var index = 0;
         for (var y = 0; y < 512; ++y) {
             for (var x = 0; x < 512; ++x) {
-                globeDoodleBits[index] = (tempData[index * 4] > 128);
+                globeDoodleBits[index] = (tempData[index * 4] > 128) ? 112 : 0;
                 ++index;
             }
         }
@@ -631,7 +638,7 @@
                     
                     if (trueY >= 0 && trueY <= 223) {
                         var fetch = (trueY + yOffset) * 512 + x + xOffset;
-                        alpha = globeDoodleBits[fetch] ? 128 : 0;
+                        alpha = globeDoodleBits[fetch];
                     }
                 }
 
