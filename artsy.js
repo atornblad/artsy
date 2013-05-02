@@ -25,9 +25,7 @@
     // Minify, step 2: https://github.com/Siorki/RegPack
     
     // TODO:
-    // Globe: Dra my own doodle overlay
-    // Buddha: Make the (x+y) warp move slower
-    // Buddha: Add some text
+    // Globe: Draw my own doodle overlay
     // Bitmap tunnel: Experiment with slopes, but don't put in too much effort
     // Bitmap tunnel: Add hanging walls and whole walls (in a way that actually speeds up rendering), and side bars (in a fast way)
     
@@ -947,7 +945,7 @@
                         context.fillText("Anders Tornblad", 10, 10);
                         context.fillStyle = "#666666";
                         context.font = "30px sans-serif";
-                        context.fillText("JavaScript", 10, 55);
+                        context.fillText("JavaScript, 2013", 10, 55);
                         break;
                     case 1:
                         context.fillStyle = "#999999";
@@ -955,7 +953,7 @@
                         context.fillText("Olivi\u00e9r Bechard (RA)", 10, 10);
                         context.fillStyle = "#666666";
                         context.font = "30px sans-serif";
-                        context.fillText("graphics", 10, 55);
+                        context.fillText("Graphics, 1993", 10, 55);
                         break;
                     case 2:
                         context.fillStyle = "#999999";
@@ -963,7 +961,7 @@
                         context.fillText("Fr\u00e9d\u00e9ric Motte (Moby)", 10, 10);
                         context.fillStyle = "#666666";
                         context.font = "30px sans-serif";
-                        context.fillText("music", 10, 55);
+                        context.fillText("Music, 1993", 10, 55);
                         break;
                 }
             }
@@ -1007,13 +1005,16 @@
         var scale1 = 1;
         
         var angle2 = smoothComplete(chapterComplete) * 65536 * 3;
-        var scale2 = (chapterComplete < 0.7) ? 0.25 : smoothComplete((chapterComplete - 0.7) / 0.3) * 3.75 + 0.25
+        var scale2 = (chapterComplete < 0.8) ? 0.5 :
+                     (chapterComplete < 0.9) ? 0.5 - (chapterComplete - 0.8) * 2.5 :
+                     smoothComplete((chapterComplete - 0.9) * 10) * 3.75 + 0.25;
+//        var scale2 = (chapterComplete < 0.7) ? 0.25 : smoothComplete((chapterComplete - 0.7) / 0.3) * 3.75 + 0.25
         
         var offsetX1 = sinus[angle2 & 65535] * 80 + 50;
         var offsetY1 = sinus[(angle2 + 23000) & 65535] * 72;
         
-        var offsetX2 = sinus[angle1 & 65535] * 50 + 70;
-        var offsetY2 = -20;
+        var offsetX2 = sinus[angle1 & 65535] * 50 + 52;
+        var offsetY2 = -40;
         
         // Fetch bits from buddhaBits, draw onto buddhaCanvas (via buddhaData);
         var sourceData = buddhaBits.data;
@@ -1038,7 +1039,8 @@
                 xa2 -= offsetX2;
                 ya2 -= offsetY2;
                 
-                var secondWeight = (x * 1.5 + y * 1.5 - buddhaSceneWidth - buddhaSceneHeight) / ((buddhaSceneWidth + buddhaSceneHeight) * 2) + chapterComplete * 3 - 1;
+                var secondWeight = (x + y - buddhaSceneWidth * 2) / (buddhaSceneWidth * 2) + chapterComplete * 2;
+//                var secondWeight = (x * 1.5 + y * 1.5 - buddhaSceneWidth - buddhaSceneHeight) / ((buddhaSceneWidth + buddhaSceneHeight) * 2) + chapterComplete * 3 - 1;
                 
                 if (secondWeight < 0) secondWeight = 0;
                 if (secondWeight > 1) secondWeight = 1;
@@ -1063,8 +1065,19 @@
         // Stretch and draw buddhaCanvas onto main canvas
         context.drawImage(buddhaCanvas, halfWidth - buddhaSceneWidth * buddhaHalfFinalScale, halfHeight - buddhaSceneHeight * buddhaHalfFinalScale, buddhaSceneWidth * buddhaFinalScale, buddhaSceneHeight * buddhaFinalScale);
         
-        if (chapterComplete > 0.95) {
-            context.fillStyle = "rgba(0,0,0," + (chapterComplete * 20 - 19).toFixed(3) + ")";
+        context.fillStyle = "#998888";
+        context.textAlign = "center";
+        context.font = "italic 40px serif";
+        context.textBaseline = "top";
+        context.fillText("a glimpse from 1974", halfWidth, 0);
+        
+        if (chapterComplete < 0.05) {
+            context.fillStyle = "rgba(0,0,0," + (1 - chapterComplete * 20).toFixed(3) + ")";
+            context.fillRect(0, 0, width, height);
+        }
+        
+        if (chapterComplete > 0.9) {
+            context.fillStyle = "rgba(0,0,0," + (chapterComplete * 10 - 9).toFixed(3) + ")";
             context.fillRect(0, 0, width, height);
         }
     };
@@ -1276,8 +1289,8 @@
             
             var currentChapter = dev ? chapters[select.value] : chapters[currentChapterIndex];
             if (dev) {
+                currentChapter.to -= currentChapter.from;
                 currentChapter.from = 0;
-                currentChapter.to = 30000;
             }
             if (currentChapter && (timeOffset >= currentChapter.to)) {
                 ++currentChapterIndex;
