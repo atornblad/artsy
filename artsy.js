@@ -29,8 +29,8 @@
     // Bitmap tunnel: Experiment with slopes, but don't put in too much effort
     // Bitmap tunnel: Add hanging walls and whole walls (in a way that actually speeds up rendering), and side bars (in a fast way)
     
-    var dev = false;
-    var autoplay = true;
+    var dev = true;
+    var autoplay = false;
     var showFrame = false;
     var rnd = Math.random;
     var create = function(elementName) { return document.createElement(elementName); };
@@ -920,7 +920,7 @@
                 var screenY = halfHeight + zMultFactor * y;
                 
                 if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
-                    var alpha = (1000 - z) / 2000;
+                    var alpha = (512 - z) / 1024;
                     context.globalAlpha = alpha * fade;
                     context.fillRect(screenX, screenY, 2, 2);
                 }
