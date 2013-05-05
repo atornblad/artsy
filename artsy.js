@@ -11,7 +11,10 @@
     // Peter Cukierski, Germany
     //
     // Ra:
-    // ???, Manduel, France
+    // Oliviér Bechard, Manduel, France
+    //
+    // Moby:
+    // Frédéric Motte, France
     //
     // Chaos:
     // Dierk Ohlerich, Germany
@@ -28,10 +31,14 @@
     // Globe: Draw my own doodle overlay
     // Bitmap tunnel: Experiment with slopes, but don't put in too much effort
     // Bitmap tunnel: Add hanging walls and whole walls (in a way that actually speeds up rendering), and side bars (in a fast way)
+    // Bitmap tunnel: Don't get alpha from 1/Z, but from Z! That way, the depth is determinate.
+    // Bitmap tunnel: Getting X from Z should be pretty straight-forward! Keep track of angle at screen, Z-position of angle-change, and new angle after change
+    // Bitmap tunnel: How do I get Y from Z when there are slopes!? Try some sketching first...
+    // Star field: Fix faulty Alpha values for HTML5 logo (when it's very far away...)
     
     var dev = true;
     var autoplay = false;
-    var showFrame = false;
+    var showFrame = true;
     var rnd = Math.random;
     var create = function(elementName) { return document.createElement(elementName); };
     var timeOffset = 0;
@@ -90,6 +97,7 @@
         playing, livininsanity, select,
         whaaaaat, biteArte, deadChicken;
     
+    /*
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -114,7 +122,7 @@
             context.fillText((timeLeft / 1000).toFixed(1) + " seconds to next implemented scene", halfWidth, halfHeight + 40);
         }
     };
-    
+    */
 
     // *** Intro text scene (renderer 0)
     // http://youtu.be/_5HacABiXUE?t=0m0s
@@ -428,11 +436,11 @@
         for (var y = 0; y < maxY; ++y) {
             // y = 0 => z är alltid sådant att faktorn blir /1
             // y = targetHalfHeight => z är oändligt långt bort
-            var inverseZFactor = maxY / (maxY - y);
+            var inverseZFactor = maxY / (maxY - y); // Hur göra med denna för att få till slopes!?
             var transformedY = y * inverseZFactor;
             if (transformedY < 500) {
             var trueY = transformedY + chapterOffset / 4;
-            var alpha = 255 / inverseZFactor;
+            var alpha = 1 - transformedY / 500;
             
             var veerX = (transformedY > veerDist) ? (transformedY - veerDist) * veer : 0;
             
@@ -459,13 +467,13 @@
                     var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX + tileBitmapOffsetX) * 4;
 
                     target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++];
+                    target[targetIndex2++] = source[sourceIndex++] * alpha;
                     target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++];
+                    target[targetIndex2++] = source[sourceIndex++] * alpha;
                     target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++];
+                    target[targetIndex2++] = source[sourceIndex++] * alpha;
                     target[targetIndex++] = //alpha;
-                    target[targetIndex2++] = alpha;
+                    target[targetIndex2++] = 255;
                 }
             }
             
@@ -1145,11 +1153,8 @@
             simpleImageRenderer,
             starsRenderer,
             fatBuddhaRenderer,
-            hailSalvadoreRenderer,
-            nullRenderer
+            hailSalvadoreRenderer
         ],
-    
-    nullRendererIndex = 9,
 
     chapters = [
         {
@@ -1510,8 +1515,8 @@
         
         livininsanity = loadAudio("livin-insanity.ogg", "livin-insanity.mp3");
         whaaaaat = loadImage("whaaaaat.png");
-        biteArte = loadImage("biteArte.png");
-        deadChicken = loadImage("deadChicken.png");
+        biteArte = loadImage("biteArte2.png");
+        deadChicken = loadImage("deadChicken2.png");
         globe = loadImage("globe.png");
         globeDoodles = loadImage("globeDoodles.png");
         sanity1 = loadImage("sanity1.png");
@@ -1534,7 +1539,7 @@
 //                if (i == 0) {
 //                    option.selected = true;
 //                }
-                if (chapter.rendererIndex == 7) {
+                if (chapter.rendererIndex == 2) {
                     option.selected = true;
                 }
                 select.appendChild(option);

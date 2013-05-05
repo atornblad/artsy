@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+(function() {
+    
+    var isTransparent = function(pixel) {
+        return (pixel.a == 0);
+    }
+    
+    var getBrightness = function(pixel) {
+        return pixel.r * 2 + pixel.g * 4 + pixel.b;
+    }
+    
+    var getBrightest = function(pixelA, pixelB) {
+        if (isTransparent(pixelA)) return pixelB;
+        if (isTransparent(pixelB)) return pixelA;
+        
+        if (getBrightness(pixelA) > getBrightness(pixelB)) {
+            return pixelA;
+        } else {
+            return pixelB;
+        }
+    }
+    
+    var getRawPixel = function(source, x, y, width, height) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            return { r : source.data[(y * width + x) * 4],
+                     g : source.data[(y * width + x) * 4 + 1],
+                     b : source.data[(y * width + x) * 4 + 2],
+                     a : source.data[(y * width + x) * 4 + 3] };
+        } else {
+            return { r : 0, g : 0, b : 0, a : 0 };
+        }
+    }
+    
+    var setPixel = function(target, x, y, width, pixel) {
+        target.data[(y * width + x) * 4] = pixel.r;
+        target.data[(y * width + x) * 4 + 1] = pixel.g;
+        target.data[(y * width + x) * 4 + 2] = pixel.b;
+        target.data[(y * width + x) * 4 + 3] = pixel.a;
+    }
+    
+    var getPixel = function(source, x, y, width, height) {
+        var isCloseToTransparent = false;
+        var brightestNeighbor = { r : 0, g : 0, b : 0, a : 0 };
+        
+        var pixel = getRawPixel(source, x, y, width, height);
+        if (isTransparent(pixel)) {
+            return pixel;
+        }
+        
+        for (var yy = y - 1; yy <= y + 1; ++yy) {
+            for (var xx = x - 1; xx <= x + 1; ++xx) {
+                if (xx != x || yy != y) {
+                    var neighbor = getRawPixel(source, xx, yy, width, height);
+                    if (isTransparent(neighbor) && (xx == x || yy == y)) {
+                        isCloseToTransparent = true;
+                    }
+                    brightestNeighbor = getBrightest(brightestNeighbor, neighbor);
+                }
+            }
+        }
+        
+        if (isCloseToTransparent) {
+            var brightestNeighborBrightness = getBrightness(brightestNeighbor);
+            var pixelBrightness = getBrightness(pixel);
+            var alpha = pixelBrightness / brightestNeighborBrightness;
+            return { r : brightestNeighbor.r,
+                     g : brightestNeighbor.g,
+                     b : brightestNeighbor.b,
+                     a : alpha * 255}
+        } else {
+            return pixel;
+        }
+    };
+    
+    var onImageLoaded = function() {
+        var canvas = document.createElement("CANVAS");
+        canvas.width = this.width;
+        canvas.height = this.height;
+        
+        var context = canvas.getContext("2d");
+        
+        context.fillStyle = "#000000";
+        context.fill(0, 0, this.width, this.height);
+        context.drawImage(this, 0, 0);
+        
+        var source = context.getImageData(0, 0, this.width, this.height);
+        var target = context.createImageData(this.width, this.height);
+        
+        for (var y = 0; y < this.height; ++y) {
+            for (var x = 0; x < this.width; ++x) {
+                var pixel = getPixel(source, x, y, this.width, this.height);
+                setPixel(target, x, y, this.width, pixel);
+            }
+        }
+        
+        context.putImageData(target, 0, 0);
+        
+        document.body.appendChild(canvas);
+        document.body.style.backgroundColor = "#990000";
+        
+        window.location.href = canvas.toDataURL("image/png");
+    };
+    
+    var onload = function() {
+        var img = new Image();
+        img.onload = onImageLoaded;
+        img.src = "deadChicken.png";
+    };
+    
+    window.onload = onload;
+    
+})();
+        </script>
+    </head>
+    <body>
+    </body>
+</html>
