@@ -29,16 +29,10 @@
     
     // TODO:
     // Globe: Draw my own doodle overlay
-    // Bitmap tunnel: Experiment with slopes, but don't put in too much effort
-    // Bitmap tunnel: Add hanging walls and whole walls (in a way that actually speeds up rendering), and side bars (in a fast way)
-    // Bitmap tunnel: Don't get alpha from 1/Z, but from Z! That way, the depth is determinate.
-    // Bitmap tunnel: Getting X from Z should be pretty straight-forward! Keep track of angle at screen, Z-position of angle-change, and new angle after change
-    // Bitmap tunnel: How do I get Y from Z when there are slopes!? Try some sketching first...
-    // Star field: Fix faulty Alpha values for HTML5 logo (when it's very far away...)
     
-    var dev = true;
-    var autoplay = false;
-    var showFrame = true;
+    var dev = false;
+    var autoplay = true;
+    var showFrame = false;
     var rnd = Math.random;
     var create = function(elementName) { return document.createElement(elementName); };
     var timeOffset = 0;
@@ -342,14 +336,17 @@
     
     var tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData
     var tunnelTargetCanvas, tunnelTargetContext, tunnelTargetData;
+    var tunnelWall;
     var targetWidth = 320;
     var targetHalfWidth = targetWidth / 2;
     var targetHeight = (height - 128) / 2;
     var targetHalfHeight = targetHeight / 2;
+    var tunnelSpeedFactor = 3;
     
-    var floorScript = "    aaa bbb ccaaddddbbbbaaaacccc aaabbbdddbbbccc aa bbddddccccddbbbbabbbbcccc";
+    var floorScript =   "    aaa aaaabbbb ccccaabbccccbddddaaaaaabbbbccdda abdbccddccdcccaaabbbbbaaabbbb ccccaabbccccbd";
+    var ceilingScript = "    aaa aabbccddadddddaabbccdd aaabbcccdaaa aaaabbbb ccccaabbcccc ddddaaddddaaaaaabbbbccdda ab";
     
-    var floorOffsets;
+    var floorOffsets, ceilingOffsets;
     
     var bitmapTunnelPrepare = function() {
         tunnelBitmapWidth = tunnelBitmap.width;
@@ -372,12 +369,20 @@
         
         // floorScript and roofScript MUST be the exact same length
         floorOffsets = [];
+        ceilingOffsets = [];
         for (var i = 0; i < floorScript.length; ++i) {
             var tileLetter = floorScript[i];
             if (tileLetter == ' ') {
                 floorOffsets.push(false);
             } else {
                 floorOffsets.push((tileLetter.charCodeAt(0) - 97) * 20);
+            }
+            
+            tileLetter = ceilingScript[i];
+            if (tileLetter == ' ') {
+                ceilingOffsets.push(false);
+            } else {
+                ceilingOffsets.push((tileLetter.charCodeAt(0) - 97) * 20);
             }
         }
     };
@@ -402,93 +407,124 @@
         context.fillRect(0, 64, width, height - 128);
         
         var targetIndex = 0;
-        var targetIndex2 = (targetHeight - 1) * targetWidth * 4;
         
-        var maxY = targetHalfHeight - 32;
+        var maxY = targetHalfHeight;
         
-        var veer, veerDist = 0;
-        if (chapterOffset < 4000) {
-            veer = 0;
-        } else if (chapterOffset < 10000) {
-            veer = 0.2;
-            veerDist = (6000 - chapterOffset) / 4;
-        } else if (chapterOffset < 12000) {
-            veer = (12000 - chapterOffset) / 10000;
-            veerDist = 0;
-        } else if (chapterOffset < 18000) {
-            veer = -0.2;
-            veerDist = (14000 - chapterOffset) / 4;
-        } else if (chapterOffset < 20000) {
-            veer = (chapterOffset - 20000) / 10000;
-            veerDist = 0;
-        } else if (chapterOffset < 26000) {
-            veer = 0.2;
-            veerDist = (22000 - chapterOffset) / 4;
-        } else if (chapterOffset < 28000) {
-            veer = (28000 - chapterOffset) / 10000;
-            veerDist = 0;
-        } else {
-            veer = 0;
-        }
+        var veerOffset = chapterOffset - 5000;
+        if (veerOffset < 0)
+            veerOffset = 0;
+        else if (veerOffset < (16384/5))
+            veerOffset = 16384/5*smoothComplete(veerOffset/16384*5);
+        var veer = 0.25 * sinus[(veerOffset * 5) & 0xffff];
         
-        if (veerDist < 0) veerDist = 0;
+        var zFocus = -150;
+        var yFocus = 0;
+        var zScreen = -100;
+        var zFloor = 0;
+        var yFloor = 288;
+        var yCeiling = -288;
         
-        for (var y = 0; y < maxY; ++y) {
-            // y = 0 => z är alltid sådant att faktorn blir /1
-            // y = targetHalfHeight => z är oändligt långt bort
-            var inverseZFactor = maxY / (maxY - y); // Hur göra med denna för att få till slopes!?
-            var transformedY = y * inverseZFactor;
-            if (transformedY < 500) {
-            var trueY = transformedY + chapterOffset / 4;
-            var alpha = 1 - transformedY / 500;
+        var slopeOffset = chapterOffset - 10000;
+        if (slopeOffset < 0)
+            slopeOffset = 0;
+        var trueSlope = sinus[(slopeOffset * 7) & 0xffff] * 1.5;
+        
+        // Floor equation: y = a*z+b, where b = yFloor, a = slope
+        
+        var millisUntilEnd = chapterOffset ? (chapterOffset / chapterComplete - chapterOffset) : 30000;
+        var millisUntilMid = 15300 - chapterOffset;
+        
+        var millisUntilWall = millisUntilMid > 0 ? millisUntilMid : millisUntilEnd;
+        
+        var distanceToWallZ = millisUntilWall / tunnelSpeedFactor;
+        var showWall = (distanceToWallZ < 500 && distanceToWallZ > 0);
+        var wallMinY = maxY, wallMaxY = -maxY;
+        var wallMinX, wallMaxX;
+        
+        for (var y = -maxY; y <= maxY; ++y) {
+            // tracer ray: y = kz + m
+            //             y1 = 0, z1 = zFocus
+            //             y2 = y, z2 = zScreen
+            //             k = dy/dz = y/(zScreen - zFocus);
+            if (y == 0) continue;
             
-            var veerX = (transformedY > veerDist) ? (transformedY - veerDist) * veer : 0;
+            var slope = (trueSlope * Math.abs(y) / maxY + trueSlope) / 2;
             
-            var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
-            var tileBitmapOffsetX = (tileScriptPos >= 0) ? floorOffsets[tileScriptPos] : false;
-            var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
-            } else {
-                var tileBitmapOffsetX = false;
+            var k = y / (zScreen - zFocus);
+            var m = y + (zFloor - zScreen) / (zScreen - zFocus) * (y - yFocus);
+            
+            // y = kz+m
+            // y = az+b
+            // kz+m = az+b
+            // z = (b-m)/(k-a)
+            
+            var z = (yFloor - m) / (k - slope);
+            
+            var upsideDown = (z < 0);
+            if (upsideDown) {
+                z = (yCeiling - m) / (k - slope);
             }
-            for (var x = -targetHalfWidth; x < targetHalfWidth; ++x) {
-                var trueX = (x + veerX) * inverseZFactor;
+            
+            var offsets = upsideDown ? ceilingOffsets : floorOffsets;
+            var floorOrCeiling = upsideDown ? yCeiling : yFloor;
+
+            if (y == maxY) {
+                console.log("k=" + k + "m=" + m + "z=" + z);
+            }
+            
+            var inverseZFactor = (z - zFocus) / (-zFocus);
+            var tileBitmapOffsetX = false;
+            if (showWall && z > distanceToWallZ) {
+                //var tileBitmapOffsetX = false;
+                if (y < wallMinY) wallMinY = y;
+                if (y > wallMaxY) {
+                    wallMaxY = y;
+                    wallMinX = (-targetHalfWidth / inverseZFactor) - distanceToWallZ * veer;
+                    wallMaxX = (targetHalfWidth / inverseZFactor) - distanceToWallZ * veer;
+                }
+            } else if (z < 500) {
+                var trueY = z + chapterOffset / tunnelSpeedFactor;
+                var alpha8bit = (1 - z / 500) * 256 & 0x1ff;
                 
-                if (trueX < -targetHalfWidth || trueX > targetHalfWidth || tileBitmapOffsetX === false || tileBitmapOffsetX === undefined) {
+                var veerX = z * veer;
+                
+                var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
+                var tileBitmapOffsetX = (tileScriptPos >= 0) ? offsets[tileScriptPos] : false;
+                var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
+            } else {
+                //var tileBitmapOffsetX = false;
+            }
+            
+            var minScreenX = (-targetHalfWidth / inverseZFactor) - veerX;
+            var maxScreenX = (targetHalfWidth / inverseZFactor) - veerX;
+            
+            for (var x = -targetHalfWidth; x < targetHalfWidth; ++x) {
+                if (x < minScreenX || x > maxScreenX || tileBitmapOffsetX === false || tileBitmapOffsetX === undefined) {
+                    // outside of renderable x!
                     target[targetIndex++] = //0;
                     target[targetIndex++] = //0;
                     target[targetIndex++] = 0;
-                    target[targetIndex++] = 255;
-                    target[targetIndex2++] = //0;
-                    target[targetIndex2++] = //0;
-                    target[targetIndex2++] = 0;
-                    target[targetIndex2++] = 255;
                 } else {
+                    var trueX = (x + veerX) * inverseZFactor;
+                    
                     var bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xfff;
                     var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX + tileBitmapOffsetX) * 4;
 
-                    target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++] * alpha;
-                    target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++] * alpha;
-                    target[targetIndex++] = //source[sourceIndex];
-                    target[targetIndex2++] = source[sourceIndex++] * alpha;
-                    target[targetIndex++] = //alpha;
-                    target[targetIndex2++] = 255;
+                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
+                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
+                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
                 }
+                target[targetIndex++] = 255;
             }
-            
-            targetIndex2 -= targetWidth * 8;
         }
         
         tunnelTargetContext.putImageData(tunnelTargetData, 0, 0);
         
         context.drawImage(tunnelTargetCanvas, 0, 64, 640, 384);
-        
-        context.fillStyle = "#998888";
-        context.font = "30px sans-serif";
-        context.textAlign = "center";
-        context.textBaseline = "center";
-        context.fillText("To do: Finish bitmap tunnel effect", halfWidth, halfHeight);
+        if (showWall) {
+            context.globalAlpha = (1 - distanceToWallZ / 500);
+            context.drawImage(tunnelWall, wallMinX * 2 + halfWidth, wallMinY * 2 + halfHeight, (wallMaxX - wallMinX) * 2, (wallMaxY - wallMinY) * 2);
+        }
     };
     
     // *** Dead chicken effect (renderer 3)
@@ -929,6 +965,7 @@
                 
                 if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
                     var alpha = (512 - z) / 1024;
+                    if (alpha < 0.2) alpha = 0.2; else if (alpha > 1) alpha = 1;
                     context.globalAlpha = alpha * fade;
                     context.fillRect(screenX, screenY, 2, 2);
                 }
@@ -1522,6 +1559,7 @@
         sanity1 = loadImage("sanity1.png");
         madman = loadImage("madman.png");
         tunnelBitmap = loadImage("tunnelBits.png");
+        tunnelWall = loadImage("tunnelWall.png");
         einstein = loadImage("einstein.png");
         sanity2 = loadImage("sanity2.png");
         buddha = loadImage("seventies.png");
