@@ -27,9 +27,6 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
-    // TODO:
-    // Globe: Draw my own doodle overlay
-    
     var dev = false;
     var autoplay = true;
     var showFrame = false;
@@ -336,15 +333,15 @@
     
     var tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData
     var tunnelTargetCanvas, tunnelTargetContext, tunnelTargetData;
-    var tunnelWall;
+    var tunnelWall, tunnelHanger;
     var targetWidth = 320;
     var targetHalfWidth = targetWidth / 2;
     var targetHeight = (height - 128) / 2;
     var targetHalfHeight = targetHeight / 2;
-    var tunnelSpeedFactor = 3;
+    var tunnelSpeedFactor = 2;
     
-    var floorScript =   "    aaa aaaabbbb ccccaabbccccbddddaaaaaabbbbccdda abdbccddccdcccaaabbbbbaaabbbb ccccaabbccccbd";
-    var ceilingScript = "    aaa aabbccddadddddaabbccdd aaabbcccdaaa aaaabbbb ccccaabbcccc ddddaaddddaaaaaabbbbccdda ab";
+    var floorScript =   "    aaa aaaabbbb ccccaabbccccbddddaaaaaabbbbccdda abdbccdccc    caaabbbbbaaabbbb ccccaabbccccbdaaabbcccdaaa aaaabbbbaaabbcccdaaabbabbcab";
+    var ceilingScript = "    aaa aabbccddadddddaabbccdd aaabbcccdaaa aaaabbbb ccccbbb    cc ddddaaddddaaaaaabbbbccdda abccccaabbccccbddddaaaaaabbccddadddddaabbcc";
     
     var floorOffsets, ceilingOffsets;
     
@@ -387,6 +384,8 @@
         }
     };
     
+    var hangingWallDistance = 120;
+    
     var bitmapTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
@@ -396,7 +395,7 @@
         
         var target = tunnelTargetData.data;
         var source = tunnelBitmapData.data;
-
+        
         context.fillStyle = "#350000";
         context.fillRect(0, 0, width, 50);
         context.fillRect(0, height - 50, width, 50);
@@ -410,7 +409,7 @@
         
         var maxY = targetHalfHeight;
         
-        var veerOffset = chapterOffset - 5000;
+        var veerOffset = chapterOffset - 15000;
         if (veerOffset < 0)
             veerOffset = 0;
         else if (veerOffset < (16384/5))
@@ -424,7 +423,7 @@
         var yFloor = 288;
         var yCeiling = -288;
         
-        var slopeOffset = chapterOffset - 10000;
+        var slopeOffset = chapterOffset - 5000;
         if (slopeOffset < 0)
             slopeOffset = 0;
         var trueSlope = sinus[(slopeOffset * 7) & 0xffff] * 1.5;
@@ -440,6 +439,14 @@
         var showWall = (distanceToWallZ < 500 && distanceToWallZ > 0);
         var wallMinY = maxY, wallMaxY = -maxY;
         var wallMinX, wallMaxX;
+        
+        var nextHangingWallZ = (chapterOffset > 16500) ? (1100 - (chapterOffset / tunnelSpeedFactor) % 1600) : 20000;
+        var maxHangingWallIterations = 4;
+        while (nextHangingWallZ < 0) {
+            --maxHangingWallIterations;
+            nextHangingWallZ += hangingWallDistance;
+        }
+        var hangingWalls = [];
         
         for (var y = -maxY; y <= maxY; ++y) {
             // tracer ray: y = kz + m
@@ -467,12 +474,21 @@
             
             var offsets = upsideDown ? ceilingOffsets : floorOffsets;
             var floorOrCeiling = upsideDown ? yCeiling : yFloor;
-
-            if (y == maxY) {
-                console.log("k=" + k + "m=" + m + "z=" + z);
-            }
             
             var inverseZFactor = (z - zFocus) / (-zFocus);
+            
+            if (upsideDown && z > nextHangingWallZ && z < 500 && (!showWall || z < distanceToWallZ) && maxHangingWallIterations > 0) {
+                hangingWalls.push({
+                    topY : y,
+                    minX : (-targetHalfWidth / inverseZFactor) - z * veer,
+                    maxX : (targetHalfWidth / inverseZFactor) - z * veer,
+                    height : 100 / inverseZFactor,
+                    alpha : (1 - z / 500)
+                });
+                nextHangingWallZ += hangingWallDistance;
+                --maxHangingWallIterations;
+            }
+            
             var tileBitmapOffsetX = false;
             if (showWall && z > distanceToWallZ) {
                 //tileBitmapOffsetX = false;
@@ -521,9 +537,24 @@
         tunnelTargetContext.putImageData(tunnelTargetData, 0, 0);
         
         context.drawImage(tunnelTargetCanvas, 0, 64, 640, 384);
+        
         if (showWall) {
             context.globalAlpha = (1 - distanceToWallZ / 500);
             context.drawImage(tunnelWall, wallMinX * 2 + halfWidth, wallMinY * 2 + halfHeight, (wallMaxX - wallMinX) * 2, (wallMaxY - wallMinY) * 2);
+        }
+        
+        for (var wall, i = hangingWalls.length; wall = hangingWalls[--i];) {
+            var l = wall.minX * 2 + halfWidth;
+            var w = (wall.maxX - wall.minX) * 2;
+            var t = wall.topY * 2 + halfHeight;
+            var h = wall.height;
+            
+            context.globalAlpha = 1;
+            context.fillStyle = "#000000";
+            context.fillRect(l, t, w, h);
+            
+            context.globalAlpha = wall.alpha;
+            context.drawImage(tunnelHanger, l, t, w, h);
         }
     };
     
@@ -965,7 +996,7 @@
                 
                 if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
                     var alpha = (512 - z) / 1024;
-                    if (alpha < 0.2) alpha = 0.2; else if (alpha > 1) alpha = 1;
+                    if (alpha < 0) alpha = 0; else if (alpha > 1) alpha = 1;
                     context.globalAlpha = alpha * fade;
                     context.fillRect(screenX, screenY, 2, 2);
                 }
@@ -1378,8 +1409,9 @@
         }
         
         if (currentTime) {
-            if (!lastTime) {
-                startTime = time - 1000 * currentTime;
+            if (currentTime < 1) {
+//            if (!lastTime) {
+                startTime = time - 1000 * currentTime - 250;
             }
             lastTime = time;
         }
@@ -1560,6 +1592,7 @@
         madman = loadImage("madman.png");
         tunnelBitmap = loadImage("tunnelBits.png");
         tunnelWall = loadImage("tunnelWall.png");
+        tunnelHanger = loadImage("tunnelHanger.png");
         einstein = loadImage("einstein.png");
         sanity2 = loadImage("sanity2.png");
         buddha = loadImage("seventies.png");
