@@ -475,7 +475,7 @@
             var inverseZFactor = (z - zFocus) / (-zFocus);
             var tileBitmapOffsetX = false;
             if (showWall && z > distanceToWallZ) {
-                //var tileBitmapOffsetX = false;
+                //tileBitmapOffsetX = false;
                 if (y < wallMinY) wallMinY = y;
                 if (y > wallMaxY) {
                     wallMaxY = y;
@@ -489,10 +489,10 @@
                 var veerX = z * veer;
                 
                 var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
-                var tileBitmapOffsetX = (tileScriptPos >= 0) ? offsets[tileScriptPos] : false;
+                tileBitmapOffsetX = (tileScriptPos >= 0) ? offsets[tileScriptPos] : false;
                 var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
             } else {
-                //var tileBitmapOffsetX = false;
+                //tileBitmapOffsetX = false;
             }
             
             var minScreenX = (-targetHalfWidth / inverseZFactor) - veerX;
