@@ -1381,6 +1381,8 @@
                 context.save();
                 currentRenderer.call(this, currentChapter.subId, chapterTime, chapterComplete, frameDiff);
                 context.restore();
+            } else {
+                playing = false;
             }
             
             var ended = now();
@@ -1418,6 +1420,11 @@
         
         if (playing) {
             requestAnimationFrame(animFrame);
+        } else {
+            var event = document.createEvent("Event");
+            event.initEvent("demoDone", true, true);
+            
+            window.dispatchEvent(event);
         }
     },
     
@@ -1574,6 +1581,10 @@
         }
     },
     
+    onDemoDone = function() {
+        window.location.href = "/part-2/";
+    },
+    
     onload = function() {
         canvas = document.getElementById("demo");
         context = canvas.getContext("2d");
@@ -1581,6 +1592,7 @@
         playing = false;
         
         window.addEventListener("itemsLoader", onItemsLoader, false);
+        window.addEventListener("demoDone", onDemoDone, false);
         
         livininsanity = loadAudio("livin-insanity.ogg", "livin-insanity.mp3");
         whaaaaat = loadImage("whaaaaat.png");
