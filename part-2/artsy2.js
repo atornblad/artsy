@@ -338,6 +338,12 @@
             
             context.drawImage(sinePlasma, 0, imageY, 128, 220);
         }
+        
+        if (chapterComplete > 0.98) {
+            var alpha = (chapterComplete - 0.98) * 50;
+            context.fillStyle = "rgba(0,0,0," + alpha.toFixed(3) + ")";
+            context.fillRect(0, 0, width, height);
+        }
     };
 
     // *** Null renderer 
