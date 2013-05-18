@@ -114,7 +114,7 @@
         context.drawImage(muscleMan, halfWidth - muscleMan.width, 460 - muscleMan.height * 2, muscleMan.width * 2, muscleMan.height * 2);
     };
     
-    // *** Dotfield scroller scene (renderer 0)
+    // *** Dotfield scroller scene (renderer 1)
     // 1.0: Dots and scrolling and wave heights...
     
     var dotfieldTextCanvas, dotfieldTextContext;
@@ -231,6 +231,114 @@
             }
         }
     };
+    
+    // *** Sine plasma renderer (renderer 2)
+    
+    var sinePlasmaWidth = width >> 2;
+    var sinePlasmaHeight = height >> 2;
+    
+    var sinePlasmaCanvas, sinePlasmaContext, sinePlasmaData;
+    
+    var sineColors;
+    
+    var sinePlasma; // The image;
+    
+    var sinePlasmaPrepare = function() {
+        sinePlasmaCanvas = create("CANVAS");
+        sinePlasmaCanvas.width = sinePlasmaWidth;
+        sinePlasmaCanvas.height = sinePlasmaHeight;
+        
+        sinePlasmaContext = sinePlasmaCanvas.getContext("2d");
+        
+        sinePlasmaData = sinePlasmaContext.createImageData(sinePlasmaWidth, sinePlasmaHeight);
+        
+        sineColors = [];
+        
+        for (var i = 200; i > 0; --i) {
+            var r = i * 3.5, g = i * 1.9, b = i * 0.7;
+            if (r > 255) r = 255;
+            if (g > 255) g = 255;
+            if (b > 255) b = 255;
+            sineColors.push(r | 0, g | 0, b | 0);
+        }
+        
+        sineColors.push(0, 0, 0);
+        
+        for (var i = 1; i <= 200; ++i) {
+            var r = i * 0.6, g = i * 1.5, b = i * 2.7;
+            if (r > 255) r = 255;
+            if (g > 255) g = 255;
+            if (b > 255) b = 255;
+            sineColors.push(r | 0, g | 0, b | 0);
+        }
+    }
+    
+    var sinePlasmaRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Sine plasma";
+            }
+        }
+        
+        var sinePlasmaOffsetA = chapterOffset * 80;
+        var sinePlasmaFactorA = sinus[(chapterOffset * 20 + 16000) & 65535] * 900 * (1 - chapterComplete) + 1200;
+        
+        var sinePlasmaOffsetB = chapterOffset * 17;
+        var sinePlasmaFactorB = sinus[(chapterOffset * 11 + 16000) & 65535] * 100 + 2500;
+        
+        var sineWeightA = 1 - chapterComplete;
+        var sineWeightB = 0.4 - 0.2 * chapterComplete;;
+        
+        var data = sinePlasmaData.data;
+        
+        var offset = 0;
+        
+        for (y = 0; y < sinePlasmaHeight; ++y) {
+            var yIndexA = (y * sinePlasmaFactorA - sinePlasmaOffsetA) & 65535;
+            var yIndexB = (y * sinePlasmaFactorB - sinePlasmaOffsetB) & 65535;
+
+            for (x = sinePlasmaWidth; x > 0; --x) {
+                var xIndexA = (x * sinePlasmaFactorA - sinePlasmaOffsetA) & 65535;
+                var xIndexB = (x * sinePlasmaFactorB - sinePlasmaOffsetB) & 65535;
+                
+                var value = sineWeightA * (sinus[xIndexA] + sinus[yIndexA]) + sineWeightB * (sinus[xIndexB] + sinus[yIndexB]);
+                var colorIndex = 3 * ((value * 50 + 200) | 0);
+                
+                data[offset++] = sineColors[colorIndex++];
+                data[offset++] = sineColors[colorIndex++];
+                data[offset++] = sineColors[colorIndex++];
+                data[offset++] = 255;
+            }
+        }
+        
+        sinePlasmaContext.putImageData(sinePlasmaData, 0, 0);
+        
+        context.drawImage(sinePlasmaCanvas, 0, 0, width, height);
+        
+        if (chapterOffset < 2000) {
+            var fromStart = chapterOffset / 2000;
+            var tilDone = (2000 - chapterOffset) / 2000;
+            var tilDoneSquare = tilDone * tilDone;
+            var inverse = 1 - tilDoneSquare;
+            var blockTop = (200 - inverse * 200);
+            var blockBottom = height * inverse + blockTop;
+            var blockLeft = (400 - inverse * 400);
+            var blockRight = blockLeft + width * inverse;
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, width, blockTop);
+            context.fillRect(0, blockBottom, width, height - blockBottom + 1);
+            context.fillRect(0, blockTop - 1, blockLeft, blockBottom - blockTop + 2);
+            context.fillRect(blockRight, blockTop - 1, width - blockRight + 1, blockBottom - blockTop + 2);
+        }
+        
+        if (chapterOffset >= 22800 && chapterOffset <= 29500) {
+            var imageY = (chapterOffset < 23300) ? height - 220 * (smoothComplete((chapterOffset - 22800) / 500)) :
+                         (chapterOffset >= 29000) ? height - 220 * (smoothComplete((29500 - chapterOffset) / 500)) :
+                         height - 220;
+            
+            context.drawImage(sinePlasma, 0, imageY, 128, 220);
+        }
+    };
 
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
@@ -260,10 +368,11 @@
     var renderers = [
             endPartLoadedRenderer,
             dotfieldScrollerRenderer,
+            sinePlasmaRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 2,
+    nullRendererIndex = 3,
 
     chapters = [
         {
@@ -278,6 +387,11 @@
             subId : 0
         }, {
             from : 29400,
+            to : 62400,
+            rendererIndex : 2,
+            subId : 0
+        }, {
+            from : 62400,
             to : 201000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -300,6 +414,7 @@
     preCalc = function() {
         preCalcSinusTables();
         prepareDotfieldScroller();
+        sinePlasmaPrepare();
     },
     
     animFrame = function(time) {
@@ -544,6 +659,7 @@
         
         elekfunk = loadAudio("elekfunk.ogg", "elekfunk.mp3");
         muscleMan = loadImage("muscleMan.png");
+        sinePlasma = loadImage("sinePlasma.png");
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -553,9 +669,6 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-//                if (i == 0) {
-//                    option.selected = true;
-//                }
                 if (chapter.rendererIndex == 2) {
                     option.selected = true;
                 }
