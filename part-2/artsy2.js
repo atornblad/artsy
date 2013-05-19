@@ -1037,10 +1037,10 @@
         sinePlasma = loadImage("sinePlasma.png");
         murky = loadImage("murky.png");
         intelOutside = loadImage("intelOutside2.png");
-        mMonroe = loadImage("mMonroe.png");
-        shiffer = loadImage("shiffer.png");
-        crawford = loadImage("crawford.png");
-        arte = loadImage("arte.png");
+        mMonroe = loadImage("mMonroe2.png");
+        shiffer = loadImage("shiffer2.png");
+        crawford = loadImage("crawford2.png");
+        arte = loadImage("arte2.png");
         
         if (dev) {
             select = document.createElement("SELECT");

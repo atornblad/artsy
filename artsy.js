@@ -1586,7 +1586,7 @@
     },
     
     onDemoDone = function() {
-        window.location.href = "/part-2/";
+        window.location.href = "part-2/";
     },
     
     onload = function() {
