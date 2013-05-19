@@ -10,7 +10,7 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
-    var dev = true;
+    var dev = false;
     var autoplay = !dev;
     var showFrame = false;
     var rnd = Math.random;
@@ -148,8 +148,8 @@
         
         var angle = chapterOffset < 7000 ? 5000 :
                     chapterOffset < 8456 ? 5000 + (chapterOffset - 7000) * 45 :
-                    chapterOffset < 10600 ? 5000 :
-                    chapterOffset < 12056 ? 5000 + (chapterOffset - 10600) * 45 :
+                    chapterOffset < 10550 ? 5000 :
+                    chapterOffset < 12006 ? 5000 + (chapterOffset - 10550) * 45 :
                     chapterOffset < 14100 ? 5000 :
                     chapterOffset < 15556 ? 5000 + (chapterOffset - 14100) * 45 :
                     5000;
@@ -331,9 +331,9 @@
             context.fillRect(blockRight, blockTop - 1, width - blockRight + 1, blockBottom - blockTop + 2);
         }
         
-        if (chapterOffset >= 22800 && chapterOffset <= 29500) {
+        if (chapterOffset >= 22800 && chapterOffset <= 30300) {
             var imageY = (chapterOffset < 23300) ? height - 220 * (smoothComplete((chapterOffset - 22800) / 500)) :
-                         (chapterOffset >= 29000) ? height - 220 * (smoothComplete((29500 - chapterOffset) / 500)) :
+                         (chapterOffset >= 29800) ? height - 220 * (smoothComplete((30300 - chapterOffset) / 500)) :
                          height - 220;
             
             context.drawImage(sinePlasma, 0, imageY, 128, 220);
@@ -476,6 +476,16 @@
     var murky, murkyImageData, murkyCanvas, murkyContext, murkyTargetData;
     var intelOutside;
     
+    var intelOutsideHtmlShieldCoords = [
+        31, 0, 481, 0, 440, 460, 256, 511, 71, 460
+    ];
+    var intelOutsideHtmlShineCoords = [
+        256, 37, 440, 37, 405, 431, 256, 472
+    ];
+    var intelOutsideHtmlFiveCoords = [
+        114, 94, 397, 94, 391, 150, 175, 150, 180, 208, 386, 208, 371, 381, 256, 413, 140, 381, 132, 293, 188, 293, 192, 338, 256, 355, 318, 338, 325, 264, 129, 264
+    ];
+    
     var html5InsidePrepare = function() {
         var canv = create("CANVAS");
         canv.width = murky.width;
@@ -488,6 +498,28 @@
         murkyCanvas.width = murkyCanvas.height = 100;
         murkyContext = murkyCanvas.getContext("2d");
         murkyTargetData = murkyContext.createImageData(100, 100);
+    };
+    
+    var html5InsideDrawPolygon = function(coords, alpha, angle, mult, offsetX, offsetY, fillStyle) {
+        context.save();
+        context.translate(offsetX, offsetY);
+        context.scale(mult, mult);
+        context.rotate(angle);
+        context.translate(-256, -256);
+
+        context.beginPath();
+        for (var len = coords.length, i = 0; i < len; i += 2) {
+            if (i == 0) {
+                context.moveTo(coords[i], coords[i + 1]);
+            } else {
+                context.lineTo(coords[i], coords[i + 1]);
+            }
+        }
+        context.closePath();
+        context.globalAlpha = alpha;
+        context.fillStyle = fillStyle;
+        context.fill();
+        context.restore();
     };
     
     var html5InsideRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
@@ -542,13 +574,13 @@
         
         var globalAlpha = 1;
         
-        if (chapterComplete > 0.98) {
-            globalAlpha = (1 - chapterComplete) * 50;
+        if (chapterComplete > 0.96) {
+            globalAlpha = (1 - chapterComplete) * 25;
         }
         
         context.fillStyle = "#000000";
         context.globalAlpha = 1;
-        context.fillRect(halfWidth - 201, height - 401, 402, 402);
+        context.fillRect(0, 0, width, height);
 
         context.globalAlpha = globalAlpha;
         context.drawImage(murkyCanvas, halfWidth - 200, height - 400, 400, 400);
@@ -557,13 +589,96 @@
             var ioAlpha = chapterOffset > 1500 ? 1 : (chapterOffset - 1000) / 500;
             
             context.fillStyle = "#000000";
-            context.globalAlpha = 1;
-            context.fillRect(halfWidth - 224, 0, 448, 103);
             context.globalAlpha = ioAlpha * globalAlpha;
             context.drawImage(intelOutside, halfWidth - 223, 0, 446, 102);
         }
+        
+        if (chapterOffset > 6300) {
+            var alpha = (chapterOffset > 6800) ? 1 : (chapterOffset - 6300) / 500;
+            var angle = smoothComplete(alpha) * -0.2;
+            var mult = 1.25 - alpha;
+            var offsetX = halfWidth + 15;
+            var offsetY = 60 + 300 - 300 * alpha;
+            
+            html5InsideDrawPolygon(intelOutsideHtmlShieldCoords, alpha * globalAlpha, angle, mult, offsetX, offsetY, "#f83100");
+            html5InsideDrawPolygon(intelOutsideHtmlShineCoords, alpha * globalAlpha, angle, mult, offsetX, offsetY, "#ff5301");
+            html5InsideDrawPolygon(intelOutsideHtmlFiveCoords, alpha * globalAlpha, angle, mult, offsetX, offsetY, "rgba(240, 248, 255, 0.9)");
+        }
     }
     
+    // *** Simple images renderer (renderer 5)
+    
+    // 5.0: m.monroe
+    // 5.1: shiffer
+    // 5.2: crawford
+    // 5.3: arte
+    
+    var mMonroe, shiffer, crawford, arte;
+    var simpleImages = [];
+    
+    var prepareSimpleImages = function() {
+        simpleImages.push({
+            fadeFrom : "#000000",
+            fadeTo : "#000000",
+            image : mMonroe,
+            scaleX : 1,
+            scaleY : 2
+        });
+        simpleImages.push({
+            fadeFrom : "#000000",
+            fadeTo : "#000000",
+            image : shiffer,
+            scaleX : 1,
+            scaleY : 2
+        });
+        simpleImages.push({
+            fadeFrom : "#000000",
+            fadeTo : "#ffffff",
+            image : crawford,
+            scaleX : 1,
+            scaleY : 2
+        });
+        simpleImages.push({
+            fadeFrom : "#ffffff",
+            fadeTo : "#000000",
+            image : arte,
+            scaleX : 2,
+            scaleY : 2
+        });
+    };
+    
+    var simpleImageRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Simple image";
+            }
+        }
+        
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        
+        var imageData = simpleImages[subId];
+        var image = imageData.image;
+        var iw = image.width * imageData.scaleX;
+        var ih = image.height * imageData.scaleY;
+        context.drawImage(image, halfWidth - (iw >> 1), halfHeight - (ih >> 1), iw, ih);
+        
+        if (chapterOffset < 500) {
+            context.globalAlpha = (1 - chapterOffset / 500);
+            context.fillStyle = imageData.fadeFrom;
+            context.fillRect(0, 0, width, height);
+        } else {
+            var totalTime = chapterOffset / chapterComplete;
+            var timeLeft = totalTime - chapterOffset;
+            
+            if (timeLeft < 500) {
+                context.globalAlpha = (1 - timeLeft / 500);
+                context.fillStyle = imageData.fadeTo;
+                context.fillRect(0, 0, width, height);
+            }
+        }
+    };
+
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -595,10 +710,11 @@
             sinePlasmaRenderer,
             stripeBallRenderer,
             html5InsideRenderer,
+            simpleImageRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 5,
+    nullRendererIndex = 6,
 
     chapters = [
         {
@@ -628,6 +744,26 @@
             subId : 0
         }, {
             from : 90000,
+            to : 92700,
+            rendererIndex : 5,
+            subId : 0
+        }, {
+            from : 92700,
+            to : 94500,
+            rendererIndex : 5,
+            subId : 1
+        }, {
+            from : 94500,
+            to : 96200,
+            rendererIndex : 5,
+            subId : 2
+        }, {
+            from : 96200,
+            to : 105000,
+            rendererIndex : 5,
+            subId : 3
+        }, {
+            from : 90000,
             to : 201000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -653,6 +789,7 @@
         sinePlasmaPrepare();
         stripeBallPrepare();
         html5InsidePrepare();
+        prepareSimpleImages();
     },
     
     animFrame = function(time) {
@@ -900,6 +1037,10 @@
         sinePlasma = loadImage("sinePlasma.png");
         murky = loadImage("murky.png");
         intelOutside = loadImage("intelOutside2.png");
+        mMonroe = loadImage("mMonroe.png");
+        shiffer = loadImage("shiffer.png");
+        crawford = loadImage("crawford.png");
+        arte = loadImage("arte.png");
         
         if (dev) {
             select = document.createElement("SELECT");

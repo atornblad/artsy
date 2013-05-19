@@ -1077,10 +1077,10 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 0, width, height);
         
-        var angle1 = 65536 * sinus[(smoothComplete(chapterComplete) * 65536) & 0xffff];
-        var scale1 = 1;
+        var angle1 = 65536 * (sinus[(smoothComplete(chapterComplete) * 65536) & 0xffff] * 1.5 - 0.5);
+        var scale1 = smoothComplete(chapterComplete) * 0.5 + 0.5;
         
-        var angle2 = smoothComplete(chapterComplete) * 65536 * 3;
+        var angle2 = smoothComplete(chapterComplete) * 65536 * 4;
         var scale2 = (chapterComplete < 0.8) ? 0.5 :
                      (chapterComplete < 0.9) ? 0.5 - (chapterComplete - 0.8) * 2.5 :
                      smoothComplete((chapterComplete - 0.9) * 10) * 3.75 + 0.25;
@@ -1143,9 +1143,13 @@
         
         context.fillStyle = "#998888";
         context.textAlign = "center";
-        context.font = "italic 40px serif";
+        context.font = "italic 50px serif";
         context.textBaseline = "top";
-        context.fillText("a glimpse from 1974", halfWidth, 0);
+        context.fillText("learning...", halfWidth, 0);
+        
+        context.font = "italic 25px serif";
+        context.textBaseline = "top";
+        context.fillText("...by reinventing the wheel", halfWidth, halfHeight - buddhaSceneHeight * buddhaHalfFinalScale + buddhaSceneHeight * buddhaFinalScale);
         
         if (chapterComplete < 0.05) {
             context.fillStyle = "rgba(0,0,0," + (1 - chapterComplete * 20).toFixed(3) + ")";
