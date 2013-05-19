@@ -346,6 +346,131 @@
         }
     };
 
+    // *** Stripe ball renderer (renderer 3)
+    
+    var stripeBallWidths;
+    
+    var stripeBallPrepare = function() {
+        // Get width for yy:-100..100 (step 10)
+        stripeBallWidths = [];
+        
+        for (var y = -100; y <= 100; y += 5) {
+            stripeBallWidths.push(Math.sin(Math.acos(y * 0.0099)));
+        }
+    };
+    
+    var stripeBallRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Stripe ball";
+            }
+        }
+        
+        context.fillStyle = "#110000";
+        context.fillRect(0, 0, width, 340);
+        
+        context.fillStyle = "#330000";
+        context.fillRect(0, 340, width, height - 340);
+        
+        var phaseOffset = (1 / 6) - ((chapterOffset % 500) / 3000);
+        var z = sinus[(chapterOffset * 19 + 32768) & 65535] * 100;
+        var zFactor = 300 / (400 + z);
+
+        var y = halfHeight + 50 - Math.abs(sinus[(chapterOffset * 41) & 65535]) * zFactor * 200;
+        var x = halfWidth + sinus[(chapterOffset * 19 + 49152) & 65535] * zFactor * 200;
+        if (chapterOffset < 600) {
+            x -= 600 - 600 * smoothComplete(chapterOffset / 600);
+        }
+        if (chapterOffset > 14000) {
+            y += 600 * smoothComplete((chapterOffset - 14000) / 600);
+        }
+        
+        var totalRadius = 200 * zFactor;
+        
+        // Six strips back
+        
+        context.fillStyle = "#442222";
+        context.beginPath();
+        for (var i = 0; i < 6; ++i) {
+            var x1 = i / 6 + phaseOffset - 1/24;
+            var x2 = x1 + 1 / 12;
+            x1 = smoothComplete(x1) * 2 - 1;
+            x2 = smoothComplete(x2) * 2 - 1;
+            
+            var widthIndex = 0;
+            
+            for (var j = 0; j <= 40; ++j) {
+                var yy = -1 + 0.05 * j;
+                var widthHere = stripeBallWidths[j];
+                var px = widthHere * x1 * totalRadius + x;
+                var py = yy * totalRadius + y;
+                
+                if (j == 0) context.moveTo(px, py); else context.lineTo(px, py);
+            }
+            
+            for (var j = 40; j >= 0; --j) {
+                var yy = -1 + 0.05 * j;
+                var widthHere = stripeBallWidths[j];
+                var px = widthHere * x2 * totalRadius + x;
+                var py = yy * totalRadius + y;
+                
+                context.lineTo(px, py);
+            }
+        }
+        
+        context.closePath();
+        context.fill();
+        
+        // Six strips front
+        
+        var shinePos = x - totalRadius * 0.6 * zFactor;
+        var gradient = context.createRadialGradient(shinePos, y, totalRadius * 0.2, x, y, totalRadius);
+        
+        gradient.addColorStop(0, "rgba(" + (255 * zFactor).toFixed(0) + "," +
+                                           (221 * zFactor).toFixed(0) + "," +
+                                           (221 * zFactor).toFixed(0) + ",255)");
+        gradient.addColorStop(0.5, "#997777");
+        gradient.addColorStop(1, "#553333");
+        
+        context.fillStyle = gradient;
+        context.beginPath();
+        for (var i = 0; i < 6; ++i) {
+            var x1 = i / 6 + phaseOffset - 1/24;
+            var x2 = x1 + 1 / 12;
+            x1 = 1 - smoothComplete(x1) * 2;
+            x2 = 1 - smoothComplete(x2) * 2;
+            
+            var widthIndex = 0;
+            
+            for (var j = 0; j <= 40; ++j) {
+                var yy = -1 + 0.05 * j;
+                var widthHere = stripeBallWidths[j];
+                var px = widthHere * x1 * totalRadius + x;
+                var py = yy * totalRadius + y;
+                
+                if (j == 0) context.moveTo(px, py); else context.lineTo(px, py);
+            }
+            
+            for (var j = 40; j >= 0; --j) {
+                var yy = -1 + 0.05 * j;
+                var widthHere = stripeBallWidths[j];
+                var px = widthHere * x2 * totalRadius + x;
+                var py = yy * totalRadius + y;
+                
+                context.lineTo(px, py);
+            }
+        }
+        
+        context.closePath();
+        context.fill();
+        
+        if (chapterComplete > 0.98) {
+            context.globalAlpha = (chapterComplete - 0.98) * 50;
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, width, height);
+        }
+    };
+    
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -375,10 +500,11 @@
             endPartLoadedRenderer,
             dotfieldScrollerRenderer,
             sinePlasmaRenderer,
+            stripeBallRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 3,
+    nullRendererIndex = 4,
 
     chapters = [
         {
@@ -398,6 +524,11 @@
             subId : 0
         }, {
             from : 62400,
+            to : 77000,
+            rendererIndex : 3,
+            subId : 0
+        }, {
+            from : 7700,
             to : 201000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -421,6 +552,7 @@
         preCalcSinusTables();
         prepareDotfieldScroller();
         sinePlasmaPrepare();
+        stripeBallPrepare();
     },
     
     animFrame = function(time) {
@@ -675,7 +807,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 2) {
+                if (chapter.rendererIndex == 3) {
                     option.selected = true;
                 }
                 select.appendChild(option);
