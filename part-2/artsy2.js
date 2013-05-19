@@ -10,7 +10,7 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
-    var dev = false;
+    var dev = true;
     var autoplay = !dev;
     var showFrame = false;
     var rnd = Math.random;
@@ -471,6 +471,99 @@
         }
     };
     
+    // *** Html5 Inside renderer (renderer 4)
+    
+    var murky, murkyImageData, murkyCanvas, murkyContext, murkyTargetData;
+    var intelOutside;
+    
+    var html5InsidePrepare = function() {
+        var canv = create("CANVAS");
+        canv.width = murky.width;
+        canv.height = murky.height;
+        var cont = canv.getContext("2d");
+        cont.drawImage(murky, 0, 0);
+        murkyImageData = cont.getImageData(0, 0, murky.width, murky.height);
+        
+        murkyCanvas = create("CANVAS");
+        murkyCanvas.width = murkyCanvas.height = 100;
+        murkyContext = murkyCanvas.getContext("2d");
+        murkyTargetData = murkyContext.createImageData(100, 100);
+    };
+    
+    var html5InsideRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "HTML5 Inside";
+            }
+        }
+        
+        var targetIndex = 0;
+        
+        var offsetX = sinus[(chapterOffset * 17) & 65535] * 78 + 128;
+        var offsetY = sinus[(chapterOffset * 13 + 9000) & 65535] * 78 + 128;
+        
+        for (var y = -49.5; y < 50; ++y) {
+            var yFactor = 1 / Math.sin(Math.acos(y / 50));
+            
+            for (var x = -49.5; x < 50; ++x) {
+                var distanceSquared = x * x + y * y;
+                
+                if (distanceSquared >= 2500) {
+                    murkyTargetData.data[targetIndex++] =
+                    murkyTargetData.data[targetIndex++] =
+                    murkyTargetData.data[targetIndex++] =
+                    murkyTargetData.data[targetIndex++] = 0;
+                } else {
+                    var xFactor = 1 / Math.sin(Math.acos(x / 50));
+//                    var realDistance = Math.sqrt(distanceSquared);
+//                    var maxDistance = Math.max(Math.abs(x), Math.abs(y));
+//                    var fetchX = ((x / realDistance * maxDistance) + offsetX) | 0;
+//                    var fetchY = ((y / realDistance * maxDistance) + offsetY) | 0;
+                    var fetchX = (x * yFactor + offsetX) | 0;
+                    var fetchY = (y * xFactor + offsetY) | 0;
+                    var fetchOffset = (fetchY * 256 + fetchX) * 4;
+                    
+                    if (distanceSquared > 2100) {
+                        var alpha = (2500 - distanceSquared) / 400;
+                        murkyTargetData.data[targetIndex++] = (murkyImageData.data[fetchOffset++] * alpha) | 0;
+                        murkyTargetData.data[targetIndex++] = (murkyImageData.data[fetchOffset++] * alpha) | 0;
+                        murkyTargetData.data[targetIndex++] = (murkyImageData.data[fetchOffset++] * alpha) | 0;
+                    } else {
+                        murkyTargetData.data[targetIndex++] = murkyImageData.data[fetchOffset++];
+                        murkyTargetData.data[targetIndex++] = murkyImageData.data[fetchOffset++];
+                        murkyTargetData.data[targetIndex++] = murkyImageData.data[fetchOffset++];
+                    }
+                    murkyTargetData.data[targetIndex++] = 255;
+                }
+            }
+        }
+        
+        murkyContext.putImageData(murkyTargetData, 0, 0);
+        
+        var globalAlpha = 1;
+        
+        if (chapterComplete > 0.98) {
+            globalAlpha = (1 - chapterComplete) * 50;
+        }
+        
+        context.fillStyle = "#000000";
+        context.globalAlpha = 1;
+        context.fillRect(halfWidth - 201, height - 401, 402, 402);
+
+        context.globalAlpha = globalAlpha;
+        context.drawImage(murkyCanvas, halfWidth - 200, height - 400, 400, 400);
+        
+        if (chapterOffset > 1000) {
+            var ioAlpha = chapterOffset > 1500 ? 1 : (chapterOffset - 1000) / 500;
+            
+            context.fillStyle = "#000000";
+            context.globalAlpha = 1;
+            context.fillRect(halfWidth - 224, 0, 448, 103);
+            context.globalAlpha = ioAlpha * globalAlpha;
+            context.drawImage(intelOutside, halfWidth - 223, 0, 446, 102);
+        }
+    }
+    
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -501,10 +594,11 @@
             dotfieldScrollerRenderer,
             sinePlasmaRenderer,
             stripeBallRenderer,
+            html5InsideRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 4,
+    nullRendererIndex = 5,
 
     chapters = [
         {
@@ -528,7 +622,12 @@
             rendererIndex : 3,
             subId : 0
         }, {
-            from : 7700,
+            from : 77000,
+            to : 90000,
+            rendererIndex : 4,
+            subId : 0
+        }, {
+            from : 90000,
             to : 201000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -553,6 +652,7 @@
         prepareDotfieldScroller();
         sinePlasmaPrepare();
         stripeBallPrepare();
+        html5InsidePrepare();
     },
     
     animFrame = function(time) {
@@ -798,6 +898,8 @@
         elekfunk = loadAudio("elekfunk.ogg", "elekfunk.mp3");
         muscleMan = loadImage("muscleMan.png");
         sinePlasma = loadImage("sinePlasma.png");
+        murky = loadImage("murky.png");
+        intelOutside = loadImage("intelOutside2.png");
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -807,7 +909,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 3) {
+                if (chapter.rendererIndex == 4) {
                     option.selected = true;
                 }
                 select.appendChild(option);

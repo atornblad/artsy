@@ -65,7 +65,7 @@
         if (isCloseToTransparent) {
             var brightestNeighborBrightness = getBrightness(brightestNeighbor);
             var pixelBrightness = getBrightness(pixel);
-            var alpha = pixelBrightness / brightestNeighborBrightness;
+            var alpha = brightestNeighborBrightness == 0 ? 0 : pixelBrightness / brightestNeighborBrightness;
             return { r : brightestNeighbor.r,
                      g : brightestNeighbor.g,
                      b : brightestNeighbor.b,
@@ -107,7 +107,7 @@
     var onload = function() {
         var img = new Image();
         img.onload = onImageLoaded;
-        img.src = "deadChicken.png";
+        img.src = "part-2/intelOutside.png";
     };
     
     window.onload = onload;
