@@ -1,0 +1,21 @@
+Sanity Arte, part 2
+* "Endpart loaded..." scrolling over picture
+* Sinus dot field
+* Sine plasma
+* Bouncing
+* Now on HTML5 label!
+* Models…
+- Rainbow outward swirl
+- Pillars onto painting
+- Vortex zoomer
+- Anti digit mode
+- Shame on us
+- No AGA (Web-GL, Flash, Silverlight)
+
+Sanity Arte, part 3
+- Spaceships in formation
+- Torpedoes launched
+- ARTE and in convex objects spinning around
+- Inconvex cube in the middle, and convex objects around it
+- SANITY DEMO OR DIE
+- In pursuit

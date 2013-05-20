@@ -190,9 +190,6 @@
                 // 2: Tranform into screen coordinates
                 var screenX = halfWidth + rx * 2500 / (300 + rz * 2);
                 var screenY = halfHeight + (10 - rz) * 1200 / (300 + rz * 2);
-                if (z == 0 && x == 0) {
-                    console.log(screenX, screenY);
-                }
                 
                 // 3: Check text bit
                 var isTextBit = textData.data[textDataOffset] > 127;
@@ -679,6 +676,112 @@
         }
     };
 
+    // *** Rainbox chaos zoom renderer (renderer 6)
+    
+    var rainbowChaosColors = [
+        0, 0, 0,
+        0x19, 0x13, 0,
+        0x33, 0x27, 0,
+        0x66, 0x2b, 0,
+        0x88, 0x31, 0,
+        0xbb, 0x28, 0,
+        0xbb, 0x45, 0,
+        0xcd, 0x65, 0,
+        0xdd, 0x98, 0,
+        0xdf, 0xb7, 0,
+        0xde, 0xe5, 2,
+        0x67, 0xe9, 11,
+        0x13, 0xee, 17,
+        0x09, 0xff, 0x7b,
+        0x02, 0xff, 0xf2,
+        1, 0x87, 0xff
+    ];
+    
+    var rainbowChaosCanvas, rainbowChaosContext, rainbowChaosTarget;
+    
+    var rainbowChaosPrepare = function() {
+        rainbowChaosCanvas = create("CANVAS");
+        rainbowChaosCanvas.width = 96;
+        rainbowChaosCanvas.height = 86;
+        
+        rainbowChaosContext = rainbowChaosCanvas.getContext("2d");
+        
+        rainbowChaosTarget = rainbowChaosContext.createImageData(96, 86);
+    };
+    
+    var fromAngleTo64k = 32768 / (4 * Math.atan(1));
+    
+    var rainbowChaosRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Rainbow chaos zoom";
+            }
+        }
+        
+        var index = 0;
+        var offset = chapterOffset * 10;
+        var angleOffset = 100000 * sinus[(chapterOffset * 3) & 65535];
+        
+        for (var y = -42.5; y < 43; ++y) {
+            for (var x = -47.5; x < 48; ++x) {
+                var distanceSquared = x * x + y * y; // 0..4153-ish
+                var distance = Math.sqrt(distanceSquared);
+                
+                // 1: Rotate (x,y) coordinate around center
+                var rx = x * sinus[(angleOffset + 16384) & 65535] - y * sinus[angleOffset & 65535];
+                var ry = y * sinus[(angleOffset + 16384) & 65535] + x * sinus[angleOffset & 65535];
+                
+                var angle = Math.atan(rx / ry);
+                
+                var chapter = (offset / 100 - distance) / 50;
+                var chapterInt = chapter | 0;
+                var chapterDist = chapter - chapterInt;
+                
+                var factor1 = chapter < 0 ? 0 : ((chapterInt * 7) & 3) + 1;
+                var factor2 = chapter < 0 ? 0 : (((chapterInt * 13) & 13) + 5) >> 1;
+                var factor3 = chapter < 0 ? 0 : (((chapterInt * 9) & 7) + 2) << 2;
+                var factor4 = chapter < 0 ? 0 : (((chapterInt * 7) & 7) + 1) << 1;
+                
+                if (chapterDist > 0.9 && chapter > 0) {
+                    var nextChapter = chapterInt + 1;
+                    var factor1b = ((nextChapter * 7) & 3) + 1;
+                    var factor2b = (((nextChapter * 13) & 13) + 5) >> 1;
+                    var factor3b = (((nextChapter * 9) & 7) + 2) << 2;
+                    var factor4b = (((nextChapter * 7) & 7) + 1) << 1;
+                    
+                    var nextWeight = (chapterDist - 0.9) * 10;
+                    var weight = 1 - nextWeight;
+                    factor1 = factor1 * weight + factor1b * nextWeight;
+                    factor2 = factor2 * weight + factor2b * nextWeight;
+                    factor3 = factor3 * weight + factor3b * nextWeight;
+                    factor4 = factor4 * weight + factor4b * nextWeight;
+                }
+                
+                var value1 = sinus[(offset - distanceSquared * factor1) & 65535];
+                var value2 = sinus[(angle * fromAngleTo64k * factor2) & 65535];
+                
+                value = (value1 * factor3 + value2 * factor4) & 15;
+                value *= 3;
+                
+                rainbowChaosTarget.data[index++] = rainbowChaosColors[value++];
+                rainbowChaosTarget.data[index++] = rainbowChaosColors[value++];
+                rainbowChaosTarget.data[index++] = rainbowChaosColors[value++];
+                rainbowChaosTarget.data[index++] = 255;
+            }
+        }
+        
+        rainbowChaosContext.putImageData(rainbowChaosTarget, 0, 0);
+        
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        context.drawImage(rainbowChaosCanvas, halfWidth - 192, halfHeight - 172, 384, 344);
+        
+        if (chapterComplete > 0.95) {
+            context.globalAlpha = (chapterComplete - 0.95) * 20;
+            context.fillRect(0, 0, width, height);
+        }
+    };
+    
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -700,7 +803,7 @@
             context.textBaseline = "middle";
             context.fillText("This scene is not yet implemented...", halfWidth, halfHeight);
             context.font = "20px sans-serif";
-            context.fillText((timeLeft / 1000).toFixed(1) + " seconds to next implemented scene", halfWidth, halfHeight + 40);
+            context.fillText((timeLeft / 1000).toFixed(1) + " seconds to go", halfWidth, halfHeight + 40);
         }
     };
     
@@ -711,10 +814,11 @@
             stripeBallRenderer,
             html5InsideRenderer,
             simpleImageRenderer,
+            rainbowChaosRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 6,
+    nullRendererIndex = 7,
 
     chapters = [
         {
@@ -763,7 +867,12 @@
             rendererIndex : 5,
             subId : 3
         }, {
-            from : 90000,
+            from : 105000,
+            to : 133000,
+            rendererIndex : 6,
+            subId : 0
+        }, {
+            from : 133000,
             to : 201000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -790,6 +899,7 @@
         stripeBallPrepare();
         html5InsidePrepare();
         prepareSimpleImages();
+        rainbowChaosPrepare();
     },
     
     animFrame = function(time) {
@@ -1050,7 +1160,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 4) {
+                if (chapter.rendererIndex == 6) {
                     option.selected = true;
                 }
                 select.appendChild(option);
