@@ -782,6 +782,100 @@
         }
     };
     
+    // *** Artwork renderer (renderer 7)
+    
+    var artwork;
+    
+    var artworkColors = (function() {
+        var result = [];
+        
+        for (var i = 0; i <= 7; ++i) {
+            var r = (0x88 + ((255 - 0x88) / 7) * i) | 0;
+            var gb = (0x44 + ((0xaa - 0x44) / 7) * i) | 0;
+            
+            result.push("#" + (0x1000000 + (65536 * r) + (256 * gb) + gb).toString(16).substr(1));
+            result.push("#" + (0x1000000 + (65536 * r) + (256 * r) + r).toString(16).substr(1));
+        }
+        
+        return result;
+    })();
+    
+    var artworkRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Artwork";
+            }
+        }
+        
+        var pictureY = 0;
+        
+        if (subId == 0) {
+            pictureY = height;
+            
+            var cameraZ = 5 * sinus[(chapterOffset * 13) & 65535] + 23;
+            var cameraY = 2 * sinus[(chapterOffset * 9 + 16384) & 65535] + 2;
+            var cameraX = 2.5 * sinus[(chapterOffset * 5 + 50000) & 65535] + 2.5;
+            
+            var pic = (chapterComplete - 0.9) * 10;
+            
+            if (pic > 0) {
+                var cameraZPic = 15;
+                var cameraYPic = pic * 0.8465 + 3;
+                var cameraXPic = 0;
+                
+                cameraX = cameraX * (1 - pic) + cameraXPic * pic;
+                pic = smoothComplete(pic);
+                cameraZ = cameraZ * (1 - pic) + cameraZPic * pic;
+                cameraY = cameraY * (1 - pic) + cameraYPic * pic;
+            }
+            
+            context.fillStyle = "#442133";
+            context.fillRect(0, 0, width, height);
+            
+            for (var z = 0; z <= 12; ++z) {
+                var mult = 40 / (cameraZ - z);
+                
+                for (var y = 0; y <= 4; ++y) {
+                    var barTop = (y - cameraY - 0.25) * mult * 200 + halfHeight;
+                    var barBottom = (y - cameraY + 0.25) * mult * 200 + halfHeight;
+                    
+                    if (z == 12 && y == 4 && pic > 0) {
+                        pictureY = barTop;
+                    }
+                    
+                    if (barBottom > 0 && barTop < height) {
+                        if (z == 0) {
+                            context.fillStyle ="#553244";
+                            context.fillRect(0, barTop, width, barBottom - barTop);
+                        }
+                    
+                        for (var x = 0; x <= 5; ++x) {
+                            var xColorOffset = (x * x) & 1;
+                            
+                            var barLeft = (x - cameraX - 0.25) * mult * 200 + halfWidth;
+                            var barRight = (x - cameraX + 0.25) * mult * 200 + halfWidth;
+                            
+                            if (barRight > 0 && barLeft < width) {
+                                context.fillStyle = artworkColors[z + xColorOffset];
+                                context.fillRect(barLeft, barTop, barRight - barLeft, barBottom - barTop);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (chapterComplete < 0.05) {
+                context.globalAlpha = 1 - (chapterComplete * 20);
+                context.fillStyle = "#000000";
+                context.fillRect(0, 0, width, height);
+            }
+        }
+        
+        if (pictureY < height) {
+            context.drawImage(artwork, 0, pictureY, 640, 512);
+        }
+    };
+    
     // *** Null renderer 
     var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
@@ -815,10 +909,11 @@
             html5InsideRenderer,
             simpleImageRenderer,
             rainbowChaosRenderer,
+            artworkRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 7,
+    nullRendererIndex = 8,
 
     chapters = [
         {
@@ -873,7 +968,17 @@
             subId : 0
         }, {
             from : 133000,
-            to : 201000,
+            to : 147000,
+            rendererIndex : 7,
+            subId : 0
+        }, {
+            from : 147000,
+            to : 154200,
+            rendererIndex : 7,
+            subId : 1
+        }, {
+            from : 154200,
+            to : 202000,
             rendererIndex : nullRendererIndex,
             subId : 0
         },
@@ -1151,6 +1256,7 @@
         shiffer = loadImage("shiffer2.png");
         crawford = loadImage("crawford2.png");
         arte = loadImage("arte2.png");
+        artwork = loadImage("artwork.png");
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -1160,7 +1266,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 6) {
+                if (chapter.rendererIndex == 7) {
                     option.selected = true;
                 }
                 select.appendChild(option);
