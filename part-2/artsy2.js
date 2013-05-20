@@ -873,7 +873,125 @@
         
         if (pictureY < height) {
             context.drawImage(artwork, 0, pictureY, 640, 512);
+            if (subId == 1 && chapterComplete > 0.95) {
+                context.globalAlpha = (chapterComplete - 0.95) * 20;
+                context.fillStyle = "#441022";
+                context.fillRect(0, 0, width, height);
+            }
         }
+    };
+    
+    // *** Chaos rotation zoom renderer
+    
+    var chaosBufferCanvases, chaosBufferContexts;
+    
+    var chaosRotationPrepare = function() {
+        chaosBufferCanvases = [];
+        chaosBufferContexts = [];
+        
+        for (var i = 0; i < 2; ++i) {
+            var canv = create("CANVAS");
+            canv.width = width;
+            canv.height = height;
+            var cont = canv.getContext("2d");
+            cont.fillStyle = "#441022";
+            cont.fillRect(0, 0, width, height);
+            
+            chaosBufferCanvases.push(canv);
+            chaosBufferContexts.push(cont);
+        }
+    };
+    
+    var chaosBufferIndex = 0;
+    
+    var chaosBlockSize = 16;
+    var chaosHalfBlockSize = 8;
+    
+    var chaosRotationRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Chaos rotation";
+            }
+        }
+        
+        var source = chaosBufferCanvases[chaosBufferIndex];
+        chaosBufferIndex = 1 - chaosBufferIndex;
+        var target = chaosBufferContexts[chaosBufferIndex];
+        
+        for (var y = 0; y < height; y += chaosBlockSize) {
+            var midY = y + chaosHalfBlockSize;
+            var yFromCenter = midY - halfHeight;
+            
+            for (var x = 0; x < width; x += chaosBlockSize) {
+                var midX = x + chaosHalfBlockSize;
+                var xFromCenter = midX - halfWidth;
+                
+                var sourceX = (xFromCenter + yFromCenter / 48) * 0.995 + halfWidth - chaosHalfBlockSize;
+                var sourceY = (yFromCenter - xFromCenter / 48) * 0.995 + halfHeight - chaosHalfBlockSize;
+                
+                if (sourceX < 0) sourceX = 0;
+                if (sourceX > (width - chaosBlockSize)) sourceX = width - chaosBlockSize;
+                if (sourceY < 0) sourceY = 0;
+                if (sourceY > (height - chaosBlockSize)) sourceY = height - chaosBlockSize;
+                
+                target.drawImage(source, sourceX, sourceY, chaosBlockSize, chaosBlockSize, x, y, chaosBlockSize, chaosBlockSize);
+            }
+        }
+        
+        if (chapterComplete < 0.75) {
+            var angle = chapterOffset * 17;
+            var phase = chapterOffset * 7;
+            
+            target.fillStyle = "#ffffff";
+            var distance = 30 * sinus[phase & 65535] + 90;
+            var posX = halfWidth + distance * sinus[angle & 65535] - 10;
+            var posY = halfHeight + distance * sinus[(angle + 16384) & 65535] - 10;
+            for (var i = 0; i < 9; ++i) {
+                target.fillRect((rnd() * 20 + posX), (rnd() * 20 + posY), 2, 2);
+            }
+            
+            angle *= -1.1;
+            angle += 7000;
+            phase *= 1.05;
+            
+            target.fillStyle = "#883366";
+            distance = 30 * sinus[phase & 65535] + 90;
+            posX = halfWidth + distance * sinus[angle & 65535] - 10;
+            posY = halfHeight + distance * sinus[(angle + 16384) & 65535] - 10;
+            for (var i = 0; i < 9; ++i) {
+                target.fillRect((rnd() * 20 + posX), (rnd() * 20 + posY), 2, 2);
+            }
+            
+            angle *= -0.8;
+            phase *= -1.05;
+            
+            target.fillStyle = "#aa7766";
+            distance = 30 * sinus[phase & 65535] + 90;
+            posX = halfWidth + distance * sinus[angle & 65535] - 10;
+            posY = halfHeight + distance * sinus[(angle + 16384) & 65535] - 10;
+            for (var i = 0; i < 9; ++i) {
+                target.fillRect((rnd() * 20 + posX), (rnd() * 20 + posY), 2, 2);
+            }
+            
+            angle *= -1.2;
+            phase *= -0.9;
+            
+            target.fillStyle = "#ee8899";
+            distance = 30 * sinus[phase & 65535] + 90;
+            posX = halfWidth + distance * sinus[angle & 65535] - 10;
+            posY = halfHeight + distance * sinus[(angle + 16384) & 65535] - 10;
+            for (var i = 0; i < 9; ++i) {
+                target.fillRect((rnd() * 20 + posX), (rnd() * 20 + posY), 2, 2);
+            }
+        }
+        
+        target.fillStyle = "#441022";
+        target.beginPath();
+        target.arc(halfWidth, halfHeight, 64, 0, 2 * Math.PI, false);
+        target.closePath();
+        target.fill();
+        
+        context.drawImage(chaosBufferCanvases[chaosBufferIndex], 0, 0);
     };
     
     // *** Null renderer 
@@ -910,10 +1028,11 @@
             simpleImageRenderer,
             rainbowChaosRenderer,
             artworkRenderer,
+            chaosRotationRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 8,
+    nullRendererIndex = 9,
 
     chapters = [
         {
@@ -978,6 +1097,11 @@
             subId : 1
         }, {
             from : 154200,
+            to : 182000,
+            rendererIndex : 8,
+            subId : 0
+        }, {
+            from : 182000,
             to : 202000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -1005,6 +1129,7 @@
         html5InsidePrepare();
         prepareSimpleImages();
         rainbowChaosPrepare();
+        chaosRotationPrepare();
     },
     
     animFrame = function(time) {
@@ -1266,7 +1391,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 7) {
+                if (chapter.rendererIndex == 8) {
                     option.selected = true;
                 }
                 select.appendChild(option);
