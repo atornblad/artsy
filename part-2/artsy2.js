@@ -992,6 +992,54 @@
         target.fill();
         
         context.drawImage(chaosBufferCanvases[chaosBufferIndex], 0, 0);
+        
+        if (chapterComplete > 0.95) {
+            context.globalAlpha = (chapterComplete - 0.95) * 20;
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, width, height);
+        }
+    };
+    
+    // *** Anti digit mode renderer
+    
+    var antiDigitPics = [];
+    
+    var antiDigitRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "Anti digit mode";
+            }
+        }
+        
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, width, height);
+        
+        context.save();
+        context.scale(0.5, 1);
+        context.font = "bold 80px sans-serif";
+        context.fillStyle = "#ffffff";
+        context.textAlign = "center";
+        context.textBaseline = "top";
+        context.fillText("anti digit mode", width, 0);
+        context.restore();
+        
+        if (chapterOffset > 4520) {
+            context.drawImage(antiDigitPics[4], halfWidth - 160, 120, 320, 256);
+        } else if (chapterOffset > 3640) {
+            context.drawImage(antiDigitPics[3], halfWidth - 160, 120, 320, 256);
+        } else if (chapterOffset > 2760) {
+            context.drawImage(antiDigitPics[2], halfWidth - 160, 120, 320, 256);
+        } else if (chapterOffset > 1880) {
+            context.drawImage(antiDigitPics[1], halfWidth - 160, 120, 320, 256);
+        } else if (chapterOffset > 1000) {
+            context.drawImage(antiDigitPics[0], halfWidth - 160, 120, 320, 256);
+        }
+        
+        if (chapterComplete > 0.9) {
+            context.globalAlpha = (chapterComplete - 0.9) * 10;
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, width, height);
+        }
     };
     
     // *** Null renderer 
@@ -1029,10 +1077,11 @@
             rainbowChaosRenderer,
             artworkRenderer,
             chaosRotationRenderer,
+            antiDigitRenderer,
             nullRenderer
         ],
     
-    nullRendererIndex = 9,
+    nullRendererIndex = 10,
 
     chapters = [
         {
@@ -1102,6 +1151,11 @@
             subId : 0
         }, {
             from : 182000,
+            to : 189500,
+            rendererIndex : 9,
+            subId : 0
+        }, {
+            from : 189500,
             to : 202000,
             rendererIndex : nullRendererIndex,
             subId : 0
@@ -1382,6 +1436,11 @@
         crawford = loadImage("crawford2.png");
         arte = loadImage("arte2.png");
         artwork = loadImage("artwork.png");
+        antiDigitPics.push(loadImage("antiDigit1.png"));
+        antiDigitPics.push(loadImage("antiDigit2.png"));
+        antiDigitPics.push(loadImage("antiDigit3.png"));
+        antiDigitPics.push(loadImage("antiDigit4.png"));
+        antiDigitPics.push(loadImage("antiDigit5.png"));
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -1391,7 +1450,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 8) {
+                if (chapter.rendererIndex == 9) {
                     option.selected = true;
                 }
                 select.appendChild(option);
