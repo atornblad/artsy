@@ -1042,29 +1042,161 @@
         }
     };
     
-    // *** Null renderer 
-    var nullRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    // *** Shame on us renderer
+    
+    var shameParts = [
+        { // SHAME
+            from : 0,
+            l : 119,
+            t : 0,
+            r : 210,
+            b : 18
+        }, { // ON
+            from : (3*60+10.9)*1000 - 189500,
+            l : 224,
+            t : 0,
+            r : 263,
+            b : 18
+        }, { // US
+            from : (3*60+11.8)*1000 - 189500,
+            l : 278,
+            t : 0,
+            r : 310,
+            b : 18
+        }, { // IT'S
+            from : (3*60+12.7)*1000 - 189500,
+            l : 191,
+            t : 26, 
+            r : 229,
+            b : 44
+        }, { // PRACTICALLY
+            from : (3*60+13.5)*1000 - 189500,
+            l : 96,
+            t : 52, 
+            r : 270,
+            b : 70
+        }, { // THE
+            from : (3*60+14.4)*1000 - 189500,
+            l : 282,
+            t : 52, 
+            r : 330,
+            b : 70
+        }, { // E
+            from : (3*60+15.0)*1000 - 189500,
+            l : 173,
+            t : 78, 
+            r : 185,
+            b : 96
+        }, { // N
+            from : (3*60+15.3)*1000 - 189500,
+            l : 199,
+            t : 78, 
+            r : 217,
+            b : 96
+        }, { // D
+            from : (3*60+15.65)*1000 - 189500,
+            l : 232,
+            t : 78, 
+            r : 249,
+            b : 96
+        }, { // OF
+            from : (3*60+16.0)*1000 - 189500,
+            l : 191,
+            t : 108, 
+            r : 223,
+            b : 126
+        }, { // ARTE
+            from : (3*60+16.6)*1000 - 189500,
+            l : 0,
+            t : 126, 
+            r : 416,
+            b : 188
+        }
+    ];
+    
+    var shameOnUs;
+    
+    var shameOnUsRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
-                return "Null";
+                return "Shame on us";
             }
         }
 
-        context.fillStyle = "#000073"
+        context.fillStyle = "#000000"
         context.fillRect(0, 0, width, height);
         
-        if (chapterOffset > 100) {
-            var totalTime = chapterOffset / chapterComplete;
-            var timeLeft = totalTime - chapterOffset;
-            
-            context.fillStyle = "#ffffff";
-            context.font = "30px sans-serif";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText("This scene is not yet implemented...", halfWidth, halfHeight);
-            context.font = "20px sans-serif";
-            context.fillText((timeLeft / 1000).toFixed(1) + " seconds to go", halfWidth, halfHeight + 40);
+        for (var i = 0; i < shameParts.length; ++i) {
+            var part = shameParts[i];
+            if (chapterOffset > part.from) {
+                context.drawImage(shameOnUs, part.l, part.t, part.r-part.l, part.b-part.t,
+                                  halfWidth - shameOnUs.width / 2 + part.l, halfHeight - shameOnUs.height + part.t * 2,
+                                  (part.r - part.l), (part.b - part.t) * 2);
+            }
         }
+        
+        if (chapterComplete > 0.9) {
+            context.globalAlpha = (chapterComplete - 0.9) * 10;
+            context.fillStyle = "#000000";
+            context.fillRect(0, 0, width, height);
+        }
+    };
+    
+    // *** No AGA renderer
+    
+    var noAgaTroll, flash, silverlight, webGl, aga;
+    
+    var noAgaRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+        if (dev) {
+            if (subId == "getName") {
+                return "No AGA";
+            }
+        }
+
+        context.fillStyle = "#000000"
+        context.fillRect(0, 0, width, height);
+        
+        if (chapterOffset < 3000) {
+            var alpha = (chapterOffset < 500) ? chapterOffset / 500 :
+                        (chapterOffset > 2500) ? (3000 - chapterOffset) / 500 :
+                        1;
+            context.globalAlpha = alpha;
+            
+            context.drawImage(aga, 109+228, 119+98, 118, 130);
+        }
+        
+        if (chapterOffset > 2500 && chapterOffset < 5000) {
+            var alpha = (chapterOffset < 3000) ? (chapterOffset - 2500) / 500 :
+                        (chapterOffset > 4500) ? (5000 - chapterOffset) / 500 :
+                        1;
+            context.globalAlpha = alpha * 0.5;
+            
+            context.drawImage(flash, 109+228, 119+71, 118, 138);
+        }
+        
+        if (chapterOffset > 4500 && chapterOffset < 7000) {
+            var alpha = (chapterOffset < 5000) ? (chapterOffset - 4500) / 500 :
+                        (chapterOffset > 6500) ? (7000 - chapterOffset) / 500 :
+                        1;
+            context.globalAlpha = alpha;
+            
+            context.drawImage(silverlight, 109+228, 119+82, 118, 117);
+        }
+        
+        if (chapterOffset > 6500 && chapterOffset < 9000) {
+            var alpha = (chapterOffset < 7000) ? (chapterOffset - 6500) / 500 :
+                        (chapterOffset > 8500) ? (9000 - chapterOffset) / 500 :
+                        1;
+            context.globalAlpha = alpha * 0.5;
+            
+            context.drawImage(webGl, 109+228, 119+114, 200, 89);
+        }
+        
+        context.globalAlpha = (chapterOffset < 500) ? chapterOffset / 500 :
+                              (chapterOffset > 8500) ? (9000 - chapterOffset) / 500 :
+                              1;
+        
+        context.drawImage(noAgaTroll, 109, 119, 422, 274);
     };
     
     var renderers = [
@@ -1078,10 +1210,9 @@
             artworkRenderer,
             chaosRotationRenderer,
             antiDigitRenderer,
-            nullRenderer
+            shameOnUsRenderer,
+            noAgaRenderer
         ],
-    
-    nullRendererIndex = 10,
 
     chapters = [
         {
@@ -1156,8 +1287,13 @@
             subId : 0
         }, {
             from : 189500,
-            to : 202000,
-            rendererIndex : nullRendererIndex,
+            to : 200000,
+            rendererIndex : 10,
+            subId : 0
+        }, {
+            from : 200000,
+            to : 209000,
+            rendererIndex : 11,
             subId : 0
         },
         false
@@ -1441,6 +1577,12 @@
         antiDigitPics.push(loadImage("antiDigit3.png"));
         antiDigitPics.push(loadImage("antiDigit4.png"));
         antiDigitPics.push(loadImage("antiDigit5.png"));
+        shameOnUs = loadImage("shameOnUs.png");
+        noAgaTroll = loadImage("noAgaTroll.png");
+        aga = loadImage("aga.png");
+        flash = loadImage("flash.png");
+        silverlight = loadImage("silverlight.png");
+        webGl = loadImage("webGL.png");
         
         if (dev) {
             select = document.createElement("SELECT");
@@ -1450,7 +1592,7 @@
                 var option = document.createElement("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
-                if (chapter.rendererIndex == 9) {
+                if (chapter.rendererIndex == 11) {
                     option.selected = true;
                 }
                 select.appendChild(option);
