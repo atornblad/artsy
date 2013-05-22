@@ -719,7 +719,6 @@
             }
         }
         
-        globeContext.clearRect(0, 0, 224, 224);
         globeContext.putImageData(globeImageData, 0, 0);
         
         context.drawImage(globeCanvas, halfWidth - 224, halfHeight - 224, 448, 448);
@@ -1561,27 +1560,43 @@
         
         context.fillStyle = "#000000"
         context.fillRect(0, 0, width, height);
-        context.fillStyle = "#ffffff";
+        context.fillStyle = "#000073";
+        context.strokeStyle = "#000073";
+        context.lineWidth = 50;
+        context.lineCap = "round";
+        
+        context.beginPath();
+        context.moveTo(halfWidth - 200, halfHeight);
+        context.lineTo(halfWidth + 200, halfHeight);
+        context.stroke();
+        
+        if (event.done < event.total) {
+            context.strokeStyle = "#000000";
+            context.lineWidth = 40;
+            context.beginPath();
+            context.moveTo(halfWidth - 200, halfHeight);
+            context.lineTo(halfWidth + 200, halfHeight);
+            context.stroke();
+            
+            context.strokeStyle = "#000073";
+            context.lineWidth = 41;
+            context.beginPath();
+            context.moveTo(halfWidth - 200, halfHeight);
+            context.lineTo(halfWidth - 200 + (400 * event.done / event.total), halfHeight);
+            context.stroke();
+        }
         
         if (event.done == event.total) {
-            context.font = "50px sans-serif";
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.fillText("Loading done!", halfWidth, halfHeight);
             context.font = "20px sans-serif";
             context.fillText("Click to start...", halfWidth, halfHeight + 40);
             
             if (autoplay) {
-                window.setTimeout(onLoadingDone, 10);
+                window.setTimeout(onLoadingDone, 1);
             }
+            
             canvas.addEventListener("click", onLoadingDone, false);
-        } else {
-            context.font = "30px sans-serif";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText("Loading...", halfWidth, halfHeight);
-            context.font = "20px sans-serif";
-            context.fillText((event.done / event.total * 100).toFixed(0) + " % done", halfWidth, halfHeight + 40);
         }
     },
     
