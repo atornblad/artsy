@@ -1565,9 +1565,9 @@
         }
     },
     
-//    onDemoDone = function() {
-//        window.location.href = "/part-3/";
-//    },
+    onDemoDone = function() {
+        window.location.href = "../part-3/";
+    },
     
     onload = function() {
         canvas = document.getElementById("demo");
@@ -1576,7 +1576,7 @@
         playing = false;
         
         window.addEventListener("itemsLoader", onItemsLoader, false);
-//        window.addEventListener("demoDone", onDemoDone, false);
+        window.addEventListener("demoDone", onDemoDone, false);
         
         elekfunk = loadAudio("elekfunk.ogg", "elekfunk.mp3");
         muscleMan = loadImage("muscleMan.png");
