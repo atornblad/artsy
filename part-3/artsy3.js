@@ -1,7 +1,7 @@
 // ==ClosureCompiler==
 // @compilation_level ADVANCED_OPTIMIZATIONS
 // @output_file_name artsy3.min.js
-// @js_externs var THREE = { MeshBasicMaterial : function() {}, Vector3 : function() {}, Mesh : function() {}, Geometry : function() { this.vertices = []; this.faces = []; }, Face3 : function() {}, MeshFaceMaterial : function() {}, PlaneGeometry : function() {}, Scene : function() {}, PerspectiveCamera : function() { this.lookAt = function() {}; }, WebGLRenderer : function() { this.setSize = function() {}; this.setClearColor = function() {}; this.render = function() {}; this.domElement = null; } };
+// @js_externs var THREE = { MeshBasicMaterial : function() {}, Vector3 : function() {}, Mesh : function() {}, Geometry : function() { this.vertices = []; this.faces = []; }, Face3 : function() {}, MeshFaceMaterial : function() {}, PlaneGeometry : function() {}, Scene : function() {}, PerspectiveCamera : function() { this.lookAt = function() {}; this.up = null; }, WebGLRenderer : function() { this.setSize = function() {}; this.setClearColor = function() {}; this.render = function() {}; this.domElement = null; } };
 // ==/ClosureCompiler==
 
 (function() {
@@ -81,70 +81,83 @@
         return material;
     };
     
+    /** @param {...number} var_args */
+    var createVector3s = function(var_args) {
+        var result = [];
+        for (var i = 0; i < arguments.length; i += 3) {
+            result.push(new THREE.Vector3(arguments[i], arguments[i + 1], arguments[i + 2]));
+        }
+        return result;
+    };
+    
+    var addFace3 = function(geom, i0, i1, i2, materialIndex) {
+        geom.faces.push(new THREE.Face3(i0, i1, i2, null, null, materialIndex));
+    };
+    
     var createFighter = function(x, y, z) {
-        var vectors = [
+        var vectors = createVector3s(
                         // Left outer disc (0..8)
-                        new THREE.Vector3(-7, 8, -4),
-                        new THREE.Vector3(-7, 8, 4),
-                        new THREE.Vector3(-7, 4, 8),
-                        new THREE.Vector3(-7, -4, 8),
-                        new THREE.Vector3(-7, -8, 4),
-                        new THREE.Vector3(-7, -8, -4),
-                        new THREE.Vector3(-7, -4, -8),
-                        new THREE.Vector3(-7, 4, -8),
-                        new THREE.Vector3(-7, 0, 0),
+                        -7, 8, -4,
+                        -7, 8, 4,
+                        -7, 4, 8,
+                        -7, -4, 8,
+                        -7, -8, 4,
+                        -7, -8, -4,
+                        -7, -4, -8,
+                        -7, 4, -8,
+                        -7, 0, 0,
                         
                         // Right outer disc (9..17)
-                        new THREE.Vector3(7, 8, -4),
-                        new THREE.Vector3(7, 8, 4),
-                        new THREE.Vector3(7, 4, 8),
-                        new THREE.Vector3(7, -4, 8),
-                        new THREE.Vector3(7, -8, 4),
-                        new THREE.Vector3(7, -8, -4),
-                        new THREE.Vector3(7, -4, -8),
-                        new THREE.Vector3(7, 4, -8),
-                        new THREE.Vector3(7, 0, 0),
+                        7, 8, -4,
+                        7, 8, 4,
+                        7, 4, 8,
+                        7, -4, 8,
+                        7, -8, 4,
+                        7, -8, -4,
+                        7, -4, -8,
+                        7, 4, -8,
+                        7, 0, 0,
                         
                         // Left waist (18..25)
-                        new THREE.Vector3(-6, 2, -1),
-                        new THREE.Vector3(-6, 2, 1),
-                        new THREE.Vector3(-6, 1, 2),
-                        new THREE.Vector3(-6, -1, 2),
-                        new THREE.Vector3(-6, -2, 1),
-                        new THREE.Vector3(-6, -2, -1),
-                        new THREE.Vector3(-6, -1, -2),
-                        new THREE.Vector3(-6, 1, -2),
+                        -6, 2, -1,
+                        -6, 2, 1,
+                        -6, 1, 2,
+                        -6, -1, 2,
+                        -6, -2, 1,
+                        -6, -2, -1,
+                        -6, -1, -2,
+                        -6, 1, -2,
                         
                         // Right waist (26..33)
-                        new THREE.Vector3(6, 2, -1),
-                        new THREE.Vector3(6, 2, 1),
-                        new THREE.Vector3(6, 1, 2),
-                        new THREE.Vector3(6, -1, 2),
-                        new THREE.Vector3(6, -2, 1),
-                        new THREE.Vector3(6, -2, -1),
-                        new THREE.Vector3(6, -1, -2),
-                        new THREE.Vector3(6, 1, -2),
+                        6, 2, -1,
+                        6, 2, 1,
+                        6, 1, 2,
+                        6, -1, 2,
+                        6, -2, 1,
+                        6, -2, -1,
+                        6, -1, -2,
+                        6, 1, -2,
                         
                         // Left belly (34..41)
-                        new THREE.Vector3(-2, 4, -2),
-                        new THREE.Vector3(-2, 4, 2),
-                        new THREE.Vector3(-2, 2, 3),
-                        new THREE.Vector3(-2, -2, 3),
-                        new THREE.Vector3(-2, -4, 2),
-                        new THREE.Vector3(-2, -4, -2),
-                        new THREE.Vector3(-2, -2, -3),
-                        new THREE.Vector3(-2, 2, -3),
+                        -2, 4, -2,
+                        -2, 4, 2,
+                        -2, 2, 3,
+                        -2, -2, 3,
+                        -2, -4, 2,
+                        -2, -4, -2,
+                        -2, -2, -3,
+                        -2, 2, -3,
                         
                         // Right belly (42..49)
-                        new THREE.Vector3(2, 4, -2),
-                        new THREE.Vector3(2, 4, 2),
-                        new THREE.Vector3(2, 2, 3),
-                        new THREE.Vector3(2, -2, 3),
-                        new THREE.Vector3(2, -4, 2),
-                        new THREE.Vector3(2, -4, -2),
-                        new THREE.Vector3(2, -2, -3),
-                        new THREE.Vector3(2, 2, -3)
-                      ];
+                        2, 4, -2,
+                        2, 4, 2,
+                        2, 2, 3,
+                        2, -2, 3,
+                        2, -4, 2,
+                        2, -4, -2,
+                        2, -2, -3,
+                        2, 2, -3
+        );
         
         var geom = new THREE.Geometry();
         for (var i = 0; i < vectors.length; ++i) {
@@ -163,43 +176,47 @@
         
         for (var i = 0; i <= 7; ++i) {
             // Left outer disc (X = -10)
-            geom.faces.push(new THREE.Face3(i, 8, (i + 1) % 8, null, null, i % 2));
+            addFace3(geom, i, 8, (i + 1) % 8, i % 2);
             
             // Right outer disc (X = 10)
-            geom.faces.push(new THREE.Face3(i + 9, (i + 1) % 8 + 9, 17, null, null, (i + 1) % 2));
+            addFace3(geom, i + 9, (i + 1) % 8 + 9, 17, i % 2)
             
             // Left outer disc to waist (X : -7..-9)
             var lo0 = i,
                 lo1 = (i + 1) % 8,
                 lw1 = (i + 1) % 8 + 18,
                 lw0 = i + 18;
-            geom.faces.push(new THREE.Face3(lo0, lo1, lw1, null, null, (i % 2) + 2));
-            geom.faces.push(new THREE.Face3(lw1, lw0, lo0, null, null, (i % 2) + 2));
+            addFace3(geom, lo0, lo1, lw1, (i % 2) + 2);
+            addFace3(geom, lw1, lw0, lo0, (i % 2) + 2);
             
             // Right outer disc to waist (X : 7..9)
             var ro0 = i + 9,
                 ro1 = (i + 1) % 8 + 9,
                 rw1 = (i + 1) % 8 + 26,
                 rw0 = i + 26;
-            geom.faces.push(new THREE.Face3(ro0, rw1, ro1, null, null, (i % 2) + 2));
-            geom.faces.push(new THREE.Face3(rw1, ro0, rw0, null, null, (i % 2) + 2));
+            addFace3(geom, ro0, rw1, ro1, (i % 2) + 2);
+            addFace3(geom, rw1, ro0, rw0, (i % 2) + 2);
             
             // Left waist to belly (X: -6..-2)
             var lb0 = i + 34;
             var lb1 = (i + 1) % 8 + 34;
-            geom.faces.push(new THREE.Face3(lw0, lw1, lb1, null, null, 3 - (i % 2)));
-            geom.faces.push(new THREE.Face3(lb1, lb0, lw0, null, null, 3 - (i % 2)));
+            addFace3(geom, lw0, lw1, lb1, 3 - (i % 2));
+            addFace3(geom, lb1, lb0, lw0, 3 - (i % 2));
             
             // Right waist to belly (X: -6..-2)
             var rb0 = i + 42;
             var rb1 = (i + 1) % 8 + 42;
-            geom.faces.push(new THREE.Face3(rw0, rb1, rw1, null, null, 3 - (i % 2)));
-            geom.faces.push(new THREE.Face3(rb1, rw0, rb0, null, null, 3 - (i % 2)));
+            addFace3(geom, rw0, rb1, rw1, 3 - (i % 2));
+            addFace3(geom, rb1, rw0, rb0, 3 - (i % 2));
             
             // Belly (X: -2..2)
-            geom.faces.push(new THREE.Face3(lb0, lb1, rb1, null, null, (i % 2) * 4));
-            geom.faces.push(new THREE.Face3(rb1, rb0, lb0, null, null, (i % 2) * 4));
+            addFace3(geom, lb0, lb1, rb1, (i % 2) * 4);
+            addFace3(geom, rb1, rb0, lb0, (i % 2) * 4);
         }
+        
+        geom.computeCentroids();
+        geom.computeFaceNormals();
+        geom.computeVertexNormals();
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(materials));
@@ -220,13 +237,22 @@
     var precalcThreeDee = function() {
         scene0 = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-//        tjsRenderer = new THREE.CanvasRenderer();
-        tjsRenderer = new THREE.WebGLRenderer();
+        // Test for WebGL support (fall back to CanvasRenderer)
+        var glTestCanvas = document.createElement("CANVAS");
+        var glTestContext = glTestCanvas.getContext("webgl") || glTestCanvas.getContext("experimental-webgl");
+        if (glTestContext) {
+            tjsRenderer = new THREE.WebGLRenderer();
+        } else {
+            tjsRenderer = new THREE.CanvasRenderer();
+        }
+        tjsRenderer.devicePixelRatio = 1;
         tjsRenderer.setSize(512, 512);
         tjsRenderer.sortObjects = true;
         
         fighters.push(createFighter(0, 190, 0));
         scene0.add(fighters[0]);
+        fighters.push(createFighter(10, 180, 50));
+        scene0.add(fighters[1]);
         scene0.add(createGround(0x406e30));
         
         scene1 = new THREE.Scene();
@@ -366,18 +392,20 @@
         context.drawImage(tjsRenderer.domElement, 0, 0);
         
         // Scroll up
+        var pixels = Math.round(frameDiff);
+        
         scrollContext2.clearRect(0, 0, 256, 1088);
         scrollContext2.drawImage(scrollBuffer, 0, 0);
         scrollContext.clearRect(0, 0, 256, 1088);
-        scrollContext.drawImage(scrollBuffer2, 0, -1);
-        --scrollPixelsUntilNextRow;
+        scrollContext.drawImage(scrollBuffer2, 0, -pixels);
+        scrollPixelsUntilNextRow -= frameDiff;
         if (scrollPixelsUntilNextRow <= 0) {
             var text = scrollText[scrollTextNextLineIndex];
-            scrollPixelsUntilNextRow = 39;
+            scrollPixelsUntilNextRow += 39;
             if (typeof text == "string") {
                 if (scrollTextNextLineIndex == 0) {
                     scrollContext.font = "bold normal 30px sans-serif";
-                    scrollPixelsUntilNextRow = 48;
+                    scrollPixelsUntilNextRow += 10;
                     scrollContext.fillStyle = "#ff9900";
                 } else {
                     scrollContext.font = "normal normal 26px sans-serif";
