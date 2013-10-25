@@ -1,7 +1,7 @@
 // ==ClosureCompiler==
 // @compilation_level ADVANCED_OPTIMIZATIONS
 // @output_file_name artsy3.min.js
-// @js_externs var THREE = { MeshBasicMaterial : function() {}, Vector3 : function() {}, Mesh : function() {}, Geometry : function() { this.vertices = []; this.faces = []; }, Face3 : function() {}, MeshFaceMaterial : function() {}, PlaneGeometry : function() {}, Scene : function() {}, PerspectiveCamera : function() { this.lookAt = function() {}; this.up = null; }, WebGLRenderer : function() { this.setSize = function() {}; this.setClearColor = function() {}; this.render = function() {}; this.domElement = null; } };
+// @externs_url http://lbrtw.com/artsy/part-3/js_externs.js
 // ==/ClosureCompiler==
 
 (function() {
@@ -67,7 +67,7 @@
         lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
         playing, mobyle, select;
     
-    var scene0, scene1, scene2, camera, fighters = [];
+    var scene0, scene1, scene2, camera, lookAt0;
     var tjsRenderer;
     
     var colorMaterials = [];
@@ -92,6 +92,162 @@
     
     var addFace3 = function(geom, i0, i1, i2, materialIndex) {
         geom.faces.push(new THREE.Face3(i0, i1, i2, null, null, materialIndex));
+    };
+    
+    var planeMaterials = [
+                        getOrCreateColor(0xb46a31), // brown
+                        getOrCreateColor(0xd28a43), // orange
+                        
+                        getOrCreateColor(0xac8b86), // reddish grey
+                        getOrCreateColor(0x896a64), // reddish dark grey
+                        
+                        getOrCreateColor(0x8f461e)  // dark brown
+                    ];
+    
+    var createMWing = function(x, y, z) {
+        var vectors = createVector3s(
+                        // Body 0..5
+                        -2, 1, 3,
+                        0, -1, 4,
+                        2, 1, 3,
+                        2, 1, -5,
+                        0, -1, -5,
+                        -2, 1, -5,
+                        
+                        // Left wing 6..
+                        -2, 1, 1,
+                        -3, 2, 2,
+                        -5, -2, 4,
+                        -5, -2, -5,
+                        -3, 2, -3,
+                        -2, 1, -2,
+                        
+                        // Right wing 6..
+                        2, 1, 1,
+                        3, 2, 2,
+                        5, -2, 4,
+                        5, -2, -5,
+                        3, 2, -3,
+                        2, 1, -2
+        );
+        
+        var geom = new THREE.Geometry();
+        for (var i = 0; i < vectors.length; ++i) {
+            geom.vertices.push(vectors[i]);
+        }
+        
+        // Body
+        addFace3(geom, 5, 0, 2, 1);
+        addFace3(geom, 2, 3, 5, 1);
+        addFace3(geom, 0, 1, 2, 3);
+        addFace3(geom, 4, 5, 3, 3);
+        addFace3(geom, 5, 1, 0, 0);
+        addFace3(geom, 4, 1, 5, 0);
+        addFace3(geom, 3, 2, 1, 4);
+        addFace3(geom, 1, 4, 3, 4);
+        
+        // Left wing top surface
+        addFace3(geom, 11, 7, 6, 3);
+        addFace3(geom, 10, 7, 11, 3);
+        addFace3(geom, 10, 8, 7, 2);
+        addFace3(geom, 9, 8, 10, 2);
+        
+        // Left wing bottom surface
+        addFace3(geom, 11, 6, 7, 3);
+        addFace3(geom, 10, 11, 7, 3);
+        addFace3(geom, 10, 7, 8, 2);
+        addFace3(geom, 9, 10, 8, 2);
+        
+        // Right wing top surface
+        addFace3(geom, 17, 12, 13, 2);
+        addFace3(geom, 16, 17, 13, 2);
+        addFace3(geom, 16, 13, 14, 3);
+        addFace3(geom, 15, 16, 14, 3);
+        
+        // Right wing bottom surface
+        addFace3(geom, 17, 13, 12, 2);
+        addFace3(geom, 16, 13, 17, 2);
+        addFace3(geom, 16, 14, 13, 3);
+        addFace3(geom, 15, 14, 16, 3);
+        
+        geom.computeCentroids();
+        geom.computeFaceNormals();
+        geom.computeVertexNormals();
+        
+        // Final stage: Create the mesh
+        var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
+        result.position = {x : x, y : y, z : z};
+        
+        return result;
+    };
+    
+    var createArrowPlane = function(x, y, z) {
+        var vectors = createVector3s(
+                        // Back 0..5
+                        -3, -2, -4,
+                        -1.5, 0, -4,
+                        0, 2, -4,
+                        1.5, 0, -4,
+                        3, -2, -4,
+                        0, -2, -4,
+                        
+                        // Top 6..
+                        0, -2, 4, // Front
+                        0, -1, 2,  // Middle ridge forward part
+                        
+                        0, 0, 0,
+                        1, 0, -2,
+                        0, 1, -2,
+                        -1, 0, -2
+        );
+        
+        var geom = new THREE.Geometry();
+        for (var i = 0; i < vectors.length; ++i) {
+            geom.vertices.push(vectors[i]);
+        }
+        
+        // Back
+        addFace3(geom, 0, 1, 5, 4);
+        addFace3(geom, 1, 2, 3, 4);
+        addFace3(geom, 5, 3, 4, 4);
+        addFace3(geom, 5, 1, 3, 2);
+        
+        // Bottom
+        addFace3(geom, 0, 4, 6, 3);
+        
+        // Left side bottom part
+        addFace3(geom, 0, 6, 7, 4);
+        
+        // Right side bottom part
+        addFace3(geom, 4, 7, 6, 0);
+        
+        // Left side top part
+        addFace3(geom, 1, 10, 2, 0);
+        addFace3(geom, 1, 11, 10, 0);
+        addFace3(geom, 0, 11, 1, 0);
+        addFace3(geom, 0, 7, 11, 0);
+        addFace3(geom, 11, 7, 8, 0);
+        
+        // Right side top part
+        addFace3(geom, 2, 10, 3, 1);
+        addFace3(geom, 10, 9, 3, 1);
+        addFace3(geom, 3, 9, 4, 1);
+        addFace3(geom, 4, 9, 7, 1);
+        addFace3(geom, 9, 8, 7, 1);
+        
+        // Cockpit
+        addFace3(geom, 10, 11, 8, 3);
+        addFace3(geom, 8, 9, 10, 3);
+        
+        geom.computeCentroids();
+        geom.computeFaceNormals();
+        geom.computeVertexNormals();
+        
+        // Final stage: Create the mesh
+        var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
+        result.position = {x : x, y : y, z : z};
+        
+        return result;
     };
     
     var createFighter = function(x, y, z) {
@@ -164,16 +320,6 @@
             geom.vertices.push(vectors[i]);
         }
         
-        var materials = [
-                            getOrCreateColor(0xb46a31),
-                            getOrCreateColor(0xd28a43),
-                            
-                            getOrCreateColor(0xac8b86),
-                            getOrCreateColor(0x896a64),
-                            
-                            getOrCreateColor(0x8f461e)
-                        ];
-        
         for (var i = 0; i <= 7; ++i) {
             // Left outer disc (X = -10)
             addFace3(geom, i, 8, (i + 1) % 8, i % 2);
@@ -219,7 +365,7 @@
         geom.computeVertexNormals();
         
         // Final stage: Create the mesh
-        var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(materials));
+        var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
         result.position = {x : x, y : y, z : z};
         
         return result;
@@ -234,25 +380,39 @@
         return result;
     };
     
-    var precalcThreeDee = function() {
-        scene0 = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-        // Test for WebGL support (fall back to CanvasRenderer)
+    var createRenderer = function() {
+        // Test for WebGL support (if no support, fall back to CanvasRenderer)
         var glTestCanvas = document.createElement("CANVAS");
         var glTestContext = glTestCanvas.getContext("webgl") || glTestCanvas.getContext("experimental-webgl");
         if (glTestContext) {
-            tjsRenderer = new THREE.WebGLRenderer();
+            return new THREE.WebGLRenderer();
         } else {
-            tjsRenderer = new THREE.CanvasRenderer();
+            return new THREE.CanvasRenderer();
         }
+    };
+    
+    var precalcThreeDee = function() {
+        scene0 = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+        
+        tjsRenderer = createRenderer();
+
         tjsRenderer.devicePixelRatio = 1;
         tjsRenderer.setSize(512, 512);
         tjsRenderer.sortObjects = true;
         
-        fighters.push(createFighter(0, 190, 0));
-        scene0.add(fighters[0]);
-        fighters.push(createFighter(10, 180, 50));
-        scene0.add(fighters[1]);
+        lookAt0 = createFighter(0, 190, 0);
+        scene0.add(lookAt0);
+        scene0.add(createFighter(10, 180, 50));
+        scene0.add(createArrowPlane(0, 170, 20));
+        scene0.add(createArrowPlane(-20, 160, 40));
+        scene0.add(createArrowPlane(20, 180, 60));
+        scene0.add(createMWing(-10, 180, 30));
+        scene0.add(createMWing(20, 200, 40));
+        scene0.add(createMWing(10, 190, 70));
+        scene0.add(createMWing(10, 210, 60));
+        scene0.add(createMWing(-10, 190, 80));
+        
         scene0.add(createGround(0x406e30));
         
         scene1 = new THREE.Scene();
@@ -371,11 +531,17 @@
             case 1:
                 //fighters[0].rotation.y = 1.3 * (fighters[0].rotation.x = (chapterOffset / 1000));
                 
-                camera.position.x = 40 * Math.sin(chapterOffset / 1100);
-                camera.position.z = 40 * Math.cos(chapterOffset / 1100);
+                camera.position.x = 40 * Math.sin(chapterOffset / 1900);
+                camera.position.z = 40 * Math.cos(chapterOffset / 1900);
                 camera.position.y = 200 + 30 * Math.sin(chapterOffset / 950);
-                camera.up = new THREE.Vector3(Math.sin(chapterOffset / 1000 + 0.7) * 0.4,1,Math.sin(chapterOffset / 1300 + 1.1) * 0.7);
-                camera.lookAt(fighters[0].position);
+                camera.up = new THREE.Vector3(Math.sin(chapterOffset / 1600 + 0.7) * 0.4,1,Math.sin(chapterOffset / 2100 + 1.1) * 0.7);
+                var lookAtPos = {
+                    x : lookAt0.position.x,
+                    y : lookAt0.position.y,
+                    z : lookAt0.position.z};
+                lookAtPos.z += 80 * smoothComplete(chapterComplete);
+                lookAtPos.y -= 30 * smoothComplete(chapterComplete);
+                camera.lookAt(lookAtPos);
                 
                 tjsRenderer.setClearColor("#0b46d2", 1);
                 tjsRenderer.render(scene0, camera);
@@ -469,19 +635,24 @@
             subId : 0
         }, {
             from : 2000,
-            to : 53180,
+            to : 42900,
             rendererIndex : 0,
             subId : 1
+        }, {
+            from : 42900,
+            to : 53180,
+            rendererIndex : 0,
+            subId : 2
         }, {
             from : 53180,
             to : 105840,
             rendererIndex : 0,
-            subId : 2
+            subId : 3
         }, {
             from : 105840,
             to : 155000,
             rendererIndex : 0,
-            subId : 3
+            subId : 4
         } ],
     
     preCalc = function() {
