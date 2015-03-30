@@ -170,13 +170,12 @@
         addFace3(geom, 16, 14, 13, 3);
         addFace3(geom, 15, 14, 16, 3);
         
-        geom.computeCentroids();
         geom.computeFaceNormals();
         geom.computeVertexNormals();
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = {x : x, y : y, z : z};
+        result.position = new THREE.Vector3(x, y, z);
         
         return result;
     };
@@ -239,13 +238,12 @@
         addFace3(geom, 10, 11, 8, 3);
         addFace3(geom, 8, 9, 10, 3);
         
-        geom.computeCentroids();
         geom.computeFaceNormals();
         geom.computeVertexNormals();
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = {x : x, y : y, z : z};
+        result.position = new THREE.Vector3(x, y, z);
         
         return result;
     };
@@ -360,13 +358,12 @@
             addFace3(geom, rb1, rb0, lb0, (i % 2) * 4);
         }
         
-        geom.computeCentroids();
         geom.computeFaceNormals();
         geom.computeVertexNormals();
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = {x : x, y : y, z : z};
+        result.position = new THREE.Vector3(x, y, z);
         
         return result;
     };
