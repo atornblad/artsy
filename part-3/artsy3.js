@@ -175,7 +175,7 @@
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = new THREE.Vector3(x, y, z);
+        result.position.set(x, y, z);
         
         return result;
     };
@@ -243,7 +243,7 @@
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = new THREE.Vector3(x, y, z);
+        result.position.set(x, y, z);
         
         return result;
     };
@@ -363,7 +363,7 @@
         
         // Final stage: Create the mesh
         var result = new THREE.Mesh(geom, new THREE.MeshFaceMaterial(planeMaterials));
-        result.position = new THREE.Vector3(x, y, z);
+        result.position.set(x, y, z);
         
         return result;
     };
@@ -527,10 +527,9 @@
         switch (subId) {
             case 1:
                 //fighters[0].rotation.y = 1.3 * (fighters[0].rotation.x = (chapterOffset / 1000));
-                
-                camera.position.x = 40 * Math.sin(chapterOffset / 1900);
-                camera.position.z = 40 * Math.cos(chapterOffset / 1900);
-                camera.position.y = 200 + 30 * Math.sin(chapterOffset / 950);
+                camera.position.set(40 * Math.sin(chapterOffset / 1900),
+                                    40 * Math.cos(chapterOffset / 1900),
+                                    200 + 30 * Math.sin(chapterOffset / 950));
                 camera.up = new THREE.Vector3(Math.sin(chapterOffset / 1600 + 0.7) * 0.4,1,Math.sin(chapterOffset / 2100 + 1.1) * 0.7);
                 var lookAtPos = {
                     x : lookAt0.position.x,
