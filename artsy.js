@@ -11,10 +11,10 @@
     // Peter Cukierski, Germany
     //
     // Ra:
-    // Oliviér Bechard, Manduel, France
+    // Olivi√©r Bechard, Manduel, France
     //
     // Moby:
-    // Frédéric Motte, France
+    // Fr√©d√©ric Motte, France
     //
     // Chaos:
     // Dierk Ohlerich, Germany
@@ -39,36 +39,9 @@
         return "rgba(" + (r|0) + "," + (g|0) + "," + (b|0) + ",1)";
     };
     
-    var getAny = function(names, target, fallback) {
-        for (var i = 0; i < names.length; ++i) {
-            var name = names[i];
-            if (target[name]) {
-                return target[name];
-            }
-        }
-        
-        return fallback;
-    };
-    
     var now = function() {
         return (new Date).getTime();
     };
-    
-    var reqAnimFrameFallback = function(func) {
-        var now = (new Date).getTime();
-        var next = (now - (now % 17)) + 17;
-        var diff = next - now;
-        if (diff < 5) diff = 17;
-        window.setTimeout(function() {
-            func.call(window, (new Date).getTime())
-        }, diff);
-    };
-    
-    var requestAnimationFrame = getAny([
-        "requestAnimationFrame",
-        "mozRequestAnimationFrame",
-        "webkitRequestAnimationFrame"
-    ], window, reqAnimFrameFallback);
     
     var width = 640;
     var height = 512;
@@ -1017,10 +990,13 @@
                     case 0:
                         context.fillStyle = "#999999";
                         context.font = "40px sans-serif";
-                        context.fillText("Anders Tornblad", 10, 10);
+                        context.fillText("Anders Marzi Tornblad", 10, 10);
                         context.fillStyle = "#666666";
                         context.font = "30px sans-serif";
                         context.fillText("JavaScript, 2013", 10, 55);
+                        context.fillStyle = "#666666";
+                        context.font = "20px sans-serif";
+                        context.fillText("Revisited in 2022", 10, 90);
                         break;
                     case 1:
                         context.fillStyle = "#999999";
@@ -1144,11 +1120,11 @@
         context.textAlign = "center";
         context.font = "italic 50px serif";
         context.textBaseline = "top";
-        context.fillText("learning...", halfWidth, 0);
+        context.fillText("Learning", halfWidth, 0);
         
         context.font = "italic 25px serif";
         context.textBaseline = "top";
-        context.fillText("...by reinventing the wheel", halfWidth, halfHeight - buddhaSceneHeight * buddhaHalfFinalScale + buddhaSceneHeight * buddhaFinalScale);
+        context.fillText("By reinventing the wheel", halfWidth, halfHeight - buddhaSceneHeight * buddhaHalfFinalScale + buddhaSceneHeight * buddhaFinalScale);
         
         if (chapterComplete < 0.05) {
             context.fillStyle = "rgba(0,0,0," + (1 - chapterComplete * 20).toFixed(3) + ")";
@@ -1549,7 +1525,12 @@
         
         preCalc();
         
-        livininsanity.play();
+        try {
+            livininsanity.play();
+        }
+        catch (e) {
+
+        }
     };
     
     onItemsLoader = function(event) {
@@ -1590,6 +1571,7 @@
             context.textAlign = "center";
             context.textBaseline = "middle";
             context.font = "20px sans-serif";
+            context.fillStyle = "#8080e6";
             context.fillText("Click to start...", halfWidth, halfHeight + 40);
             
             if (autoplay) {

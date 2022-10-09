@@ -18,40 +18,9 @@
     var timeOffset = 0;
     var frameDiff = 1;
     
-    var solidColor = function(r, g, b) {
-        return "rgba(" + (r|0) + "," + (g|0) + "," + (b|0) + ",1)";
-    };
-    
-    var getAny = function(names, target, fallback) {
-        for (var i = 0; i < names.length; ++i) {
-            var name = names[i];
-            if (target[name]) {
-                return target[name];
-            }
-        }
-        
-        return fallback;
-    };
-    
     var now = function() {
         return (new Date).getTime();
     };
-    
-    var reqAnimFrameFallback = function(func) {
-        var now = (new Date).getTime();
-        var next = (now - (now % 17)) + 17;
-        var diff = next - now;
-        if (diff < 5) diff = 17;
-        window.setTimeout(function() {
-            func.call(window, (new Date).getTime())
-        }, diff);
-    };
-    
-    var requestAnimationFrame = getAny([
-        "requestAnimationFrame",
-        "mozRequestAnimationFrame",
-        "webkitRequestAnimationFrame"
-    ], window, reqAnimFrameFallback);
     
     var width = 640;
     var height = 512;
@@ -60,7 +29,6 @@
     
     var halfWidth = width / 2;
     var halfHeight = height / 2;
-    var largestHalf = Math.max(halfWidth, halfHeight);
     
     var smoothComplete = function(chapterComplete) {
         return (1 - Math.cos(chapterComplete * pi)) / 2;
@@ -165,10 +133,10 @@
         dotfieldTextContext.font = "bold 40px sans-serif";
         dotfieldTextContext.fillText("SANITY", textX, 30);
         dotfieldTextContext.font = "30px sans-serif";
-        dotfieldTextContext.fillText("lbrtw.com for more info!", (textX) + 170, 30);
+        dotfieldTextContext.fillText("atornblad.se for more info!", (textX) + 170, 30);
 
         dotfieldTextContext.font = "bold 40px sans-serif";
-        dotfieldTextContext.fillText("SANITY", (textX) + 500, 30);
+        dotfieldTextContext.fillText("SANITY", (textX) + 560, 30);
         
         var textData = dotfieldTextContext.getImageData(0, 0, 50, 50);
 //        context.drawImage(dotfieldTextCanvas, 0, 20);
@@ -1555,6 +1523,7 @@
             context.textAlign = "center";
             context.textBaseline = "middle";
             context.font = "20px sans-serif";
+            context.fillStyle = "#8080e6";
             context.fillText("Click to start...", halfWidth, halfHeight + 40);
             
             if (autoplay) {
@@ -1566,7 +1535,7 @@
     },
     
     onDemoDone = function() {
-        window.location.href = "../part-3/";
+        //window.location.href = "../part-3/";
     },
     
     onload = function() {
