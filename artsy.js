@@ -27,36 +27,30 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
-    var dev = false;
-    var autoplay = true;
-    var showFrame = false;
-    var rnd = Math.random;
-    var create = function(elementName) { return document.createElement(elementName); };
-    var timeOffset = 0;
-    var frameDiff = 1;
+    const dev = false;
+    const autoplay = true;
+    const showFrame = false;
+    const rnd = Math.random;
+    const create = (elementName) => document.createElement(elementName);
+    let timeOffset = 0;
+    let frameDiff = 1;
     
-    var solidColor = function(r, g, b) {
-        return "rgba(" + (r|0) + "," + (g|0) + "," + (b|0) + ",1)";
-    };
+    const solidColor = (r, g, b) => "rgba(" + (r|0) + "," + (g|0) + "," + (b|0) + ",1)";
     
-    var now = function() {
-        return (new Date).getTime();
-    };
+    const now = () => (new Date).getTime();
     
-    var width = 640;
-    var height = 512;
+    const width = 640;
+    const height = 512;
     
-    var pi = 4 * Math.atan(1);
+    const pi = 4 * Math.atan(1);
     
-    var halfWidth = width / 2;
-    var halfHeight = height / 2;
-    var largestHalf = Math.max(halfWidth, halfHeight);
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+    const largestHalf = Math.max(halfWidth, halfHeight);
     
-    var smoothComplete = function(chapterComplete) {
-        return (1 - Math.cos(chapterComplete * pi)) / 2;
-    };
+    const smoothComplete = chapterComplete => (1 - Math.cos(chapterComplete * pi)) / 2;
 
-    var canvas, context, sinus, currentQuality,
+    let canvas, context, sinus, currentQuality,
         lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
         playing, livininsanity, select,
         whaaaaat, biteArte, deadChicken;
@@ -94,7 +88,7 @@
     // 0.1: So just straight off the tricycle
     // 0.2: Whaaaaat??
     
-    var introTextRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    const introTextRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Intro/midtro text";
@@ -109,9 +103,11 @@
         if (subId != 2) {
             context.scale(-0.5, 1);
         }
+        let globalAlpha;
+
         switch (subId) {
             case 0:
-                var globalAlpha = (chapterOffset >= 4300) ? (4700 - chapterOffset) / 400 : 1;
+                globalAlpha = (chapterOffset >= 4300) ? (4700 - chapterOffset) / 400 : 1;
                 context.fillStyle = solidColor(0xbb * globalAlpha, 0xaa * globalAlpha, 0xaa * globalAlpha);
                 
                 if (chapterOffset >= 1000) {
@@ -140,7 +136,7 @@
                 }
                 break;
             case 1:
-                var globalAlpha = (chapterOffset >= 3300) ? (3700 - chapterOffset) / 400 : 1;
+                globalAlpha = (chapterOffset >= 3300) ? (3700 - chapterOffset) / 400 : 1;
                 context.fillStyle = solidColor(0x99 * globalAlpha, 0x88 * globalAlpha, 0x88 * globalAlpha);
                 
                 context.font = "50px sans-serif";
@@ -173,9 +169,7 @@
                 context.globalAlpha = chapterComplete > 0.25 ? (4/3 - chapterComplete / 3 * 4) :
                                       chapterComplete < 0.1 ? (chapterComplete * 10) :
                                       1;
-                var w = whaaaaat.width;
-                var h = whaaaaat.height;
-                context.drawImage(whaaaaat, halfWidth - (w >> 1), halfHeight - (h >> 1));
+                context.drawImage(whaaaaat, halfWidth - (whaaaaat.width >> 1), halfHeight - (whaaaaat.height >> 1));
                 break;
         }
     }
@@ -189,15 +183,15 @@
     // 1.3: Bending tunnel - first upward, then far center spinning clockwise, ending by exiting through a single disc
     //      16000 ms
     
-    var discIndexOffset = 0;
-    var discZOffset = 0;
-    var discRotation = 0;
-    var discColoredMinIndex = 10;
-    var discOffsetMinZ = 1050;
-    var discRenderMinIndex = 9;
-    var discRenderMaxIndex = 9;
-    var discFarA = 32768;
-    var discColors = [
+    let discIndexOffset = 0;
+    let discZOffset = 0;
+    let discRotation = 0;
+    let discColoredMinIndex = 10;
+    let discOffsetMinZ = 1050;
+    let discRenderMinIndex = 9;
+    let discRenderMaxIndex = 9;
+    let discFarA = 32768;
+    const discColors = [
         {r : 255, g : 255, b : 255},
         {r : 255, g : 64, b : 128},
         {r : 255, g : 255, b : 255},
@@ -215,36 +209,35 @@
         context.fillStyle = "#240000";
         context.fillRect(0, 0, width, height);
         
-        var centerX = halfWidth;
-        var centerY = halfHeight;
-        var discFarX = centerX + largestHalf * sinus[discFarA];
-        var discFarY = centerY + largestHalf * sinus[(discFarA + 16384) % 65536];
+        const centerX = halfWidth;
+        const centerY = halfHeight;
+        const discFarX = centerX + largestHalf * sinus[discFarA];
+        const discFarY = centerY + largestHalf * sinus[(discFarA + 16384) % 65536];
         
-        var zOffset = (subId == 0) ? ((sinus[(chapterOffset * 32768 / 4000) & 0xffff]) * 800) : discZOffset;
-        var maxDisc = (subId == 0) ? 0 : discRenderMaxIndex;
-        var minDisc = (subId == 0) ? 0 : discRenderMinIndex;
+        const zOffset = (subId == 0) ? ((sinus[(chapterOffset * 32768 / 4000) & 0xffff]) * 800) : discZOffset;
+        const maxDisc = (subId == 0) ? 0 : discRenderMaxIndex;
+        const minDisc = (subId == 0) ? 0 : discRenderMinIndex;
         
-        for (var disc = maxDisc; disc >= minDisc; --disc) {
-            var z = 50 + 100 * disc + zOffset; // From 50 to (50 + 10 * 10) = 1050 
-            var alpha = (subId == 0) ? 1 : 1 - (z - 50) / 1000;
+        for (let disc = maxDisc; disc >= minDisc; --disc) {
+            const z = 50 + 100 * disc + zOffset; // From 50 to (50 + 10 * 10) = 1050 
+            const alpha = (subId == 0) ? 1 : 1 - (z - 50) / 1000;
             
-            var zForOffset = z - discOffsetMinZ;
-            var alphaForOffset = 1 - (zForOffset - 50) / 1000;
-            if (alphaForOffset > 1) alphaForOffset = 1;
+            const zForOffset = z - discOffsetMinZ;
+            const alphaForOffset = Math.min(1, 1 - (zForOffset - 50) / 1000);
             
-            var colorIndex = (disc >= discColoredMinIndex) ? (disc + discIndexOffset) % 4 : 0;
-            var color = discColors[colorIndex];
+            const colorIndex = (disc >= discColoredMinIndex) ? (disc + discIndexOffset) % 4 : 0;
+            const color = discColors[colorIndex];
             
-            var discX = (centerX * alphaForOffset) + (discFarX * (1 - alphaForOffset));
-            var discY = (centerY * alphaForOffset) + (discFarY * (1 - alphaForOffset));
+            const discX = (centerX * alphaForOffset) + (discFarX * (1 - alphaForOffset));
+            const discY = (centerY * alphaForOffset) + (discFarY * (1 - alphaForOffset));
                 
             context.beginPath();
-            for (var a = 0; a <= 65536; a += 256) {
-                var outerA = (a * 10) % 65536;
+            for (let a = 0; a <= 65536; a += 256) {
+                const outerA = (a * 10) % 65536;
                 
-                var radius = (1 + sinus[outerA] * 0.3) * halfWidth;
-                var x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
-                var y = discY + ((100 / z) * radius) * sinus[(a + 16384 + discRotation) % 65536];
+                const radius = (1 + sinus[outerA] * 0.3) * halfWidth;
+                const x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
+                const y = discY + ((100 / z) * radius) * sinus[(a + 16384 + discRotation) % 65536];
                 
                 if (a) {
                     context.lineTo(x, y);
@@ -254,25 +247,25 @@
             }
 
             for (var a = 65536; a >= 0; a -= 4096) {
-                var radius = halfWidth;
+                const radius = halfWidth;
                 
-                var x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
-                var y = discY + ((100 / z) * radius) * sinus[(a + 16384 + discRotation) % 65536];
+                const x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
+                const y = discY + ((100 / z) * radius) * sinus[(a + 16384 + discRotation) % 65536];
                 
                 context.lineTo(x, y);
             }
 
             context.closePath();
             
-            var r = (color.r * alpha) + (0x24 * (1 - alpha));
-            var g = (color.g * alpha);
-            var b = (color.b * alpha);
+            const r = (color.r * alpha) + (0x24 * (1 - alpha));
+            const g = (color.g * alpha);
+            const b = (color.b * alpha);
             
-            context.fillStyle = "rgba(" + r.toFixed(0) + "," + g.toFixed(0) + "," + b.toFixed(0) + ",1)";
+            context.fillStyle = solidColor(r, g, b);
             context.fill();
         }
         
-        var newDiscZOffset = (discZOffset - 9 * frameDiff);
+        let newDiscZOffset = (discZOffset - 9 * frameDiff);
         while (newDiscZOffset < 0) {
             ++discIndexOffset;
             newDiscZOffset += 100;
@@ -304,29 +297,29 @@
     // *** Bitmap tunnel effect (renderer 2)
     // http://youtu.be/_5HacABiXUE?t=0m11s
     
-    var tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData
-    var tunnelTargetCanvas, tunnelTargetContext, tunnelTargetData;
-    var tunnelWall, tunnelHanger;
-    var targetWidth = 320;
-    var targetHalfWidth = targetWidth / 2;
-    var targetHeight = (height - 128) / 2;
-    var targetHalfHeight = targetHeight / 2;
-    var tunnelSpeedFactor = 2;
+    let tunnelBitmap, tunnelBitmapWidth, tunnelBitmapHeight, tunnelBitmapData
+    let tunnelTargetCanvas, tunnelTargetContext, tunnelTargetData;
+    let tunnelWall, tunnelHanger;
+    const targetWidth = 320;
+    const targetHalfWidth = targetWidth / 2;
+    const targetHeight = (height - 128) / 2;
+    const targetHalfHeight = targetHeight / 2;
+    const tunnelSpeedFactor = 2;
     
-    var floorScript =   "    aaa aaaabbbb ccccaabbccccbddddaaaaaabbbbccdda abdbccdccc    caaabbbbbaaabbbb ccccaabbccccbdaaabbcccdaaa aaaabbbbaaabbcccdaaabbabbcab";
-    var ceilingScript = "    aaa aabbccddadddddaabbccdd aaabbcccdaaa aaaabbbb ccccbbb    cc ddddaaddddaaaaaabbbbccdda abccccaabbccccbddddaaaaaabbccddadddddaabbcc";
+    const floorScript =   "    aaa aaaabbbb ccccaabbccccbddddaaaaaabbbbccdda abdbccdccc    caaabbbbbaaabbbb ccccaabbccccbdaaabbcccdaaa aaaabbbbaaabbcccdaaabbabbcab";
+    const ceilingScript = "    aaa aabbccddadddddaabbccdd aaabbcccdaaa aaaabbbb ccccbbb    cc ddddaaddddaaaaaabbbbccdda abccccaabbccccbddddaaaaaabbccddadddddaabbcc";
     
-    var floorOffsets, ceilingOffsets;
+    let floorOffsets, ceilingOffsets;
     
-    var bitmapTunnelPrepare = function() {
+    const bitmapTunnelPrepare = () => {
         tunnelBitmapWidth = tunnelBitmap.width;
         tunnelBitmapHeight = tunnelBitmap.height;
         
-        var tempCanvas = create("CANVAS");
+        const tempCanvas = create("CANVAS");
         tempCanvas.width = tunnelBitmapWidth;
         tempCanvas.height = tunnelBitmapHeight;
 
-        var tempContext = tempCanvas.getContext("2d");
+        const tempContext = tempCanvas.getContext("2d");
         tempContext.drawImage(tunnelBitmap, 0, 0, tunnelBitmapWidth, tunnelBitmapHeight);
         
         tunnelBitmapData = tempContext.getImageData(0, 0, tunnelBitmapWidth, tunnelBitmapHeight);
@@ -340,34 +333,34 @@
         // floorScript and roofScript MUST be the exact same length
         floorOffsets = [];
         ceilingOffsets = [];
-        for (var i = 0; i < floorScript.length; ++i) {
-            var tileLetter = floorScript[i];
-            if (tileLetter == ' ') {
+        for (let i = 0; i < floorScript.length; ++i) {
+            const floorTileLetter = floorScript[i];
+            if (floorTileLetter == ' ') {
                 floorOffsets.push(false);
             } else {
-                floorOffsets.push((tileLetter.charCodeAt(0) - 97) * 20);
+                floorOffsets.push((floorTileLetter.charCodeAt(0) - 97) * 20);
             }
             
-            tileLetter = ceilingScript[i];
-            if (tileLetter == ' ') {
+            const ceilingTileLetter = ceilingScript[i];
+            if (ceilingTileLetter == ' ') {
                 ceilingOffsets.push(false);
             } else {
-                ceilingOffsets.push((tileLetter.charCodeAt(0) - 97) * 20);
+                ceilingOffsets.push((ceilingTileLetter.charCodeAt(0) - 97) * 20);
             }
         }
     };
     
-    var hangingWallDistance = 120;
+    const hangingWallDistance = 120;
     
-    var bitmapTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    const bitmapTunnelRenderer = (subId, chapterOffset, chapterComplete, frameDiff) => {
         if (dev) {
             if (subId == "getName") {
                 return "Bitmap tunnel";
             }
         }
         
-        var target = tunnelTargetData.data;
-        var source = tunnelBitmapData.data;
+        const target = tunnelTargetData.data;
+        const source = tunnelBitmapData.data;
         
         context.fillStyle = "#350000";
         context.fillRect(0, 0, width, 50);
@@ -378,77 +371,75 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 64, width, height - 128);
         
-        var targetIndex = 0;
+        let targetIndex = 0;
         
-        var maxY = targetHalfHeight;
+        const maxY = targetHalfHeight;
         
-        var veerOffset = chapterOffset - 15000;
+        let veerOffset = chapterOffset - 15000;
         if (veerOffset < 0)
             veerOffset = 0;
         else if (veerOffset < (16384/5))
             veerOffset = 16384/5*smoothComplete(veerOffset/16384*5);
-        var veer = 0.25 * sinus[(veerOffset * 5) & 0xffff];
+            const veer = 0.25 * sinus[(veerOffset * 5) & 0xffff];
         
-        var zFocus = -150;
-        var yFocus = 0;
-        var zScreen = -100;
-        var zFloor = 0;
-        var yFloor = 288;
-        var yCeiling = -288;
+        const zFocus = -150;
+        const yFocus = 0;
+        const zScreen = -100;
+        const zFloor = 0;
+        const yFloor = 288;
+        const yCeiling = -288;
         
-        var slopeOffset = chapterOffset - 5000;
+        let slopeOffset = chapterOffset - 5000;
         if (slopeOffset < 0)
             slopeOffset = 0;
-        var trueSlope = sinus[(slopeOffset * 7) & 0xffff] * 1.5;
+            const trueSlope = sinus[(slopeOffset * 7) & 0xffff] * 1.5;
         
         // Floor equation: y = a*z+b, where b = yFloor, a = slope
         
-        var millisUntilEnd = chapterOffset ? (chapterOffset / chapterComplete - chapterOffset) : 30000;
-        var millisUntilMid = 15300 - chapterOffset;
+        const millisUntilEnd = chapterOffset ? (chapterOffset / chapterComplete - chapterOffset) : 30000;
+        const millisUntilMid = 15300 - chapterOffset;
         
-        var millisUntilWall = millisUntilMid > 0 ? millisUntilMid : millisUntilEnd;
+        const millisUntilWall = millisUntilMid > 0 ? millisUntilMid : millisUntilEnd;
         
-        var distanceToWallZ = millisUntilWall / tunnelSpeedFactor;
-        var showWall = (distanceToWallZ < 500 && distanceToWallZ > 0);
-        var wallMinY = maxY, wallMaxY = -maxY;
-        var wallMinX, wallMaxX;
+        const distanceToWallZ = millisUntilWall / tunnelSpeedFactor;
+        const showWall = (distanceToWallZ < 500 && distanceToWallZ > 0);
+        let wallMinY = maxY, wallMaxY = -maxY;
+        let wallMinX, wallMaxX;
         
-        var nextHangingWallZ = (chapterOffset > 16500) ? (1100 - (chapterOffset / tunnelSpeedFactor) % 1600) : 20000;
-        var maxHangingWallIterations = 4;
+        let nextHangingWallZ = (chapterOffset > 16500) ? (1100 - (chapterOffset / tunnelSpeedFactor) % 1600) : 20000;
+        let maxHangingWallIterations = 4;
         while (nextHangingWallZ < 0) {
             --maxHangingWallIterations;
             nextHangingWallZ += hangingWallDistance;
         }
-        var hangingWalls = [];
+        const hangingWalls = [];
         
-        for (var y = -maxY; y <= maxY; ++y) {
+        for (let y = -maxY; y <= maxY; ++y) {
             // tracer ray: y = kz + m
             //             y1 = 0, z1 = zFocus
             //             y2 = y, z2 = zScreen
             //             k = dy/dz = y/(zScreen - zFocus);
             if (y == 0) continue;
             
-            var slope = (trueSlope * Math.abs(y) / maxY + trueSlope) / 2;
+            const slope = (trueSlope * Math.abs(y) / maxY + trueSlope) / 2;
             
-            var k = y / (zScreen - zFocus);
-            var m = y + (zFloor - zScreen) / (zScreen - zFocus) * (y - yFocus);
+            const k = y / (zScreen - zFocus);
+            const m = y + (zFloor - zScreen) / (zScreen - zFocus) * (y - yFocus);
             
             // y = kz+m
             // y = az+b
             // kz+m = az+b
             // z = (b-m)/(k-a)
             
-            var z = (yFloor - m) / (k - slope);
+            let z = (yFloor - m) / (k - slope);
             
             var upsideDown = (z < 0);
             if (upsideDown) {
                 z = (yCeiling - m) / (k - slope);
             }
             
-            var offsets = upsideDown ? ceilingOffsets : floorOffsets;
-            var floorOrCeiling = upsideDown ? yCeiling : yFloor;
-            
-            var inverseZFactor = (z - zFocus) / (-zFocus);
+            const offsets = upsideDown ? ceilingOffsets : floorOffsets;
+            const inverseZFactor = (z - zFocus) / (-zFocus);
             
             if (upsideDown && z > nextHangingWallZ && z < 500 && (!showWall || z < distanceToWallZ) && maxHangingWallIterations > 0) {
                 hangingWalls.push({
@@ -462,7 +453,10 @@
                 --maxHangingWallIterations;
             }
             
-            var tileBitmapOffsetX = false;
+            let tileBitmapOffsetX = false;
+            let veerX = 0;
+            let bitmapY = 0;
+            let alpha8bit = 0;
             if (showWall && z > distanceToWallZ) {
                 //tileBitmapOffsetX = false;
                 if (y < wallMinY) wallMinY = y;
@@ -472,36 +466,36 @@
                     wallMaxX = (targetHalfWidth / inverseZFactor) - distanceToWallZ * veer;
                 }
             } else if (z < 500) {
-                var trueY = z + chapterOffset / tunnelSpeedFactor;
-                var alpha8bit = (1 - z / 500) * 256 & 0x1ff;
+                const trueY = z + chapterOffset / tunnelSpeedFactor;
+                alpha8bit = (1 - z / 500) * 256 & 0x1ff;
                 
-                var veerX = z * veer;
+                veerX = z * veer;
                 
                 var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
                 tileBitmapOffsetX = (tileScriptPos >= 0) ? offsets[tileScriptPos] : false;
-                var bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
+                bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
             } else {
                 //tileBitmapOffsetX = false;
             }
             
-            var minScreenX = (-targetHalfWidth / inverseZFactor) - veerX;
-            var maxScreenX = (targetHalfWidth / inverseZFactor) - veerX;
+            const minScreenX = (-targetHalfWidth / inverseZFactor) - veerX;
+            const maxScreenX = (targetHalfWidth / inverseZFactor) - veerX;
             
-            for (var x = -targetHalfWidth; x < targetHalfWidth; ++x) {
+            for (let x = -targetHalfWidth; x < targetHalfWidth; ++x) {
                 if (x < minScreenX || x > maxScreenX || tileBitmapOffsetX === false || tileBitmapOffsetX === undefined) {
                     // outside of renderable x!
                     target[targetIndex++] = //0;
                     target[targetIndex++] = //0;
                     target[targetIndex++] = 0;
                 } else {
-                    var trueX = (x + veerX) * inverseZFactor;
+                    const trueX = (x + veerX) * inverseZFactor;
                     
-                    var bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xfff;
-                    var sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX + tileBitmapOffsetX) * 4;
+                    const bitmapX = (((trueX + targetHalfWidth) >> 1) % 20) & 0xfff;
+                    const sourceIndex = (bitmapY * tunnelBitmapWidth + bitmapX + tileBitmapOffsetX) * 4;
 
-                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
-                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
-                    target[targetIndex++] = source[sourceIndex++] * alpha8bit >> 8;
+                    target[targetIndex++] = source[sourceIndex] * alpha8bit >> 8;
+                    target[targetIndex++] = source[sourceIndex + 1] * alpha8bit >> 8;
+                    target[targetIndex++] = source[sourceIndex + 2] * alpha8bit >> 8;
                 }
                 target[targetIndex++] = 255;
             }
@@ -516,11 +510,11 @@
             context.drawImage(tunnelWall, wallMinX * 2 + halfWidth, wallMinY * 2 + halfHeight, (wallMaxX - wallMinX) * 2, (wallMaxY - wallMinY) * 2);
         }
         
-        for (var wall, i = hangingWalls.length; wall = hangingWalls[--i];) {
-            var l = wall.minX * 2 + halfWidth;
-            var w = (wall.maxX - wall.minX) * 2;
-            var t = wall.topY * 2 + halfHeight;
-            var h = wall.height;
+        for (let wall, i = hangingWalls.length; wall = hangingWalls[--i];) {
+            const l = wall.minX * 2 + halfWidth;
+            const w = (wall.maxX - wall.minX) * 2;
+            const t = wall.topY * 2 + halfHeight;
+            const h = wall.height;
             
             context.globalAlpha = 1;
             context.fillStyle = "#000000";
