@@ -29,12 +29,6 @@
     // Minify, step 1: http://closure-compiler.appspot.com/home
     // Minify, step 2: https://github.com/Siorki/RegPack
     
-    const dev = false;
-    const autoplay = true;
-    const showFrame = false;
-    let timeOffset = 0;
-    let frameDiff = 1;
-
     let sinus, livininsanity, whaaaaat, biteArte, deadChicken;
     
     /*
