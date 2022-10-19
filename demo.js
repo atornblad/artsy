@@ -11,28 +11,20 @@ const addToLoading = function(item) {
     areLoading.push(item);
     ++totalLoadingAdded;
 
-    var event = document.createEvent("Event");
-    event.initEvent("itemsLoader", true, true);
-    event.total = totalLoadingAdded;
-    event.done = totalLoadingAdded - areLoading.length;
-    
+    const event = new CustomEvent('itemsLoader', { detail: { total: totalLoadingAdded, done: totalLoadingAdded - areLoading.length } });
     window.dispatchEvent(event);
 };
 
 const loadingDone = function(item) {
-    var newLoading = [];
-    for (var i = 0; i < areLoading.length; ++i) {
+    const newLoading = [];
+    for (let i = 0; i < areLoading.length; ++i) {
         if (areLoading[i] != item) {
             newLoading.push(areLoading[i]);
         }
     }
     areLoading = newLoading;
     
-    var event = document.createEvent("Event");
-    event.initEvent("itemsLoader", true, true);
-    event.total = totalLoadingAdded;
-    event.done = totalLoadingAdded - areLoading.length;
-    
+    const event = new CustomEvent('itemsLoader', { detail: { total: totalLoadingAdded, done: totalLoadingAdded - areLoading.length } });
     window.dispatchEvent(event);
 };
 
@@ -48,7 +40,7 @@ const onAudioProgress = function(event) {
     if (audioProgressTimerId) {
         window.clearTimeout(audioProgressTimerId);
     }
-    var audio = this;
+    const audio = this;
     audioProgressTimerId = window.setTimeout(function() { onIpadAudioProgressHack(audio); }, 2000);
 };
 
@@ -66,7 +58,7 @@ let ontimeupdate;
 
 const loadAudio = function(oggSource, mp3Source) {
     // returns a reference to the AUDIO element
-    var audio = create("AUDIO");
+    const audio = create("AUDIO");
     audio.controls = true;
     audio.preload = "auto";
     
@@ -77,8 +69,8 @@ const loadAudio = function(oggSource, mp3Source) {
     audio.addEventListener("progress", onAudioProgress, false);
     audio.addEventListener("canplay", onAudioCanPlay, false);
     
-    var canPlayOgg = audio.canPlayType("audio/ogg");
-    var canPlayMp3 = audio.canPlayType("audio/mpeg");
+    const canPlayOgg = audio.canPlayType("audio/ogg");
+    const canPlayMp3 = audio.canPlayType("audio/mpeg");
     
     if (canPlayOgg == "probably" || (canPlayOgg == "maybe" && canPlayMp3 != "probably")) {
         audio.src = oggSource;
@@ -96,7 +88,7 @@ const onImageLoad = function() {
 };
 
 const loadImage = function(src) {
-    var image = new Image();
+    const image = new Image();
     
     addToLoading(image);
     
@@ -106,12 +98,6 @@ const loadImage = function(src) {
     return image;
 };
 
-const preCalc = (precalcs) => {
-    for (const precalc of precalcs) {
-        precalc();
-    }
-};
-
 let startingTimerId = null;
 
 const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCallback) => {
@@ -119,7 +105,7 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
     let currentTime;
     let lastTime;
     let currentChapterIndex = 0;
-    let currentQuality = 1;
+    let currentQuality = 0.8;
 
     const animFrame = function(time) {
 
@@ -139,27 +125,24 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
             }
             
             
+            const starting = now();
             if (currentChapter) {
-                var chapterTime = timeOffset - currentChapter.from;
-                var chapterComplete = chapterTime / (currentChapter.to - currentChapter.from);
+                const chapterTime = timeOffset - currentChapter.from;
+                const chapterComplete = chapterTime / (currentChapter.to - currentChapter.from);
                 const currentRenderer = renderers[currentChapter.rendererIndex];
                 
-                var starting = now();
                 context.globalAlpha = 1;
                 context.save();
-                currentRenderer.call(this, canvas, context, currentChapter.subId, chapterTime, chapterComplete, frameDiff);
+                currentRenderer.call(this, canvas, context, currentChapter.subId, chapterTime, chapterComplete, frameDiff, currentQuality);
                 context.restore();
             } else {
                 playing = false;
             }
             
-            var ended = now();
-            var ms = ended - starting;
-            var qualityStep = (22 - ms - 10 * frameDiff) / 200;
-            if (qualityStep > 0) {
-                qualityStep *= 0.005;
-            }
-            var newQuality = currentQuality + qualityStep;
+            const ended = now();
+            const ms = ended - starting;
+            let qualityStep = (22 - ms - 10 * frameDiff) / 1000;
+            let newQuality = currentQuality + qualityStep;
             if (newQuality > 1) {
                 newQuality = 1;
             } else if (newQuality < 0.1) {
@@ -189,9 +172,7 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
         if (playing) {
             requestAnimationFrame(animFrame);
         } else {
-            var event = document.createEvent("Event");
-            event.initEvent("demoDone", true, true);
-            
+            const event = new CustomEvent('demoDone');
             window.dispatchEvent(event);
         }
     };
@@ -203,6 +184,12 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
 
     ontimeupdate = function(event) {
         currentTime = this.currentTime;
+    };
+
+    const preCalc = (precalcs) => {
+        for (const precalc of precalcs) {
+            precalc();
+        }
     };
 
     const onLoadingDone = function() {
@@ -239,7 +226,7 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
         context.lineTo(halfWidth + 200, halfHeight);
         context.stroke();
         
-        if (event.done < event.total) {
+        if (event.detail.done < event.detail.total) {
             context.strokeStyle = "#000000";
             context.lineWidth = 40;
             context.beginPath();
@@ -255,7 +242,7 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
             context.stroke();
         }
         
-        if (event.done == event.total) {
+        if (event.detail.done == event.detail.total) {
             context.textAlign = "center";
             context.textBaseline = "middle";
             context.font = "20px sans-serif";
@@ -283,10 +270,10 @@ const demo = (renderers, chapters, precalcs, loadCallback, playCallback, doneCal
         
         if (dev) {
             select = create("SELECT");
-            for (var i = 0; i < chapters.length - 1; ++i) {
-                var chapter = chapters[i];
-                var name = renderers[chapter.rendererIndex]("getName") + ", part " + chapter.subId;
-                var option = create("OPTION");
+            for (let i = 0; i < chapters.length - 1; ++i) {
+                const chapter = chapters[i];
+                const name = renderers[chapter.rendererIndex]("getName") + ", part " + chapter.subId;
+                const option = create("OPTION");
                 option.value = i;
                 option.appendChild(document.createTextNode(name));
                 if (chapter.rendererIndex == 2) {

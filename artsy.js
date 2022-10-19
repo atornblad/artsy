@@ -35,10 +35,7 @@
     let timeOffset = 0;
     let frameDiff = 1;
 
-    let canvas, context, sinus, currentQuality,
-        lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
-        playing, livininsanity, select,
-        whaaaaat, biteArte, deadChicken;
+    let sinus, livininsanity, whaaaaat, biteArte, deadChicken;
     
     /*
     // *** Null renderer 
@@ -182,7 +179,7 @@
         {r : 96, g : 240, b : 255}
     ];
     
-    var discTunnelRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const discTunnelRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Disc tunnel";
@@ -230,7 +227,7 @@
                 }
             }
 
-            for (var a = 65536; a >= 0; a -= 4096) {
+            for (let a = 65536; a >= 0; a -= 4096) {
                 const radius = halfWidth;
                 
                 const x = discX + ((100 / z) * radius) * sinus[(a + discRotation) % 65536];
@@ -336,7 +333,7 @@
     
     const hangingWallDistance = 120;
     
-    const bitmapTunnelRenderer = (canvas, context, subId, chapterOffset, chapterComplete, frameDiff) => {
+    const bitmapTunnelRenderer = (canvas, context, subId, chapterOffset, chapterComplete, frameDiff, quality) => {
         if (dev) {
             if (subId == "getName") {
                 return "Bitmap tunnel";
@@ -398,7 +395,8 @@
         }
         const hangingWalls = [];
         
-        for (let y = -maxY; y <= maxY; ++y) {
+        const yAdd = Math.round((1 / quality));
+        for (let y = -maxY; y <= maxY; y += yAdd) {
             // tracer ray: y = kz + m
             //             y1 = 0, z1 = zFocus
             //             y2 = y, z2 = zScreen
@@ -417,7 +415,7 @@
             
             let z = (yFloor - m) / (k - slope);
             
-            var upsideDown = (z < 0);
+            const upsideDown = (z < 0);
             if (upsideDown) {
                 z = (yCeiling - m) / (k - slope);
             }
@@ -455,7 +453,7 @@
                 
                 veerX = z * veer;
                 
-                var tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
+                const tileScriptPos = (trueY / tunnelBitmapHeight / 4) & 0xff;
                 tileBitmapOffsetX = (tileScriptPos >= 0) ? offsets[tileScriptPos] : false;
                 bitmapY = (trueY % tunnelBitmapHeight) & 0xff;
             } else {
@@ -482,6 +480,14 @@
                     target[targetIndex++] = source[sourceIndex + 2] * alpha8bit >> 8;
                 }
                 target[targetIndex++] = 255;
+            }
+            if (yAdd != 1) {
+                const lineSize = targetWidth * 4;
+                const skipSize = (yAdd - 1) * lineSize;
+                for (let skip = 0; skip < skipSize; ++skip) {
+                    target[targetIndex] = target[targetIndex - lineSize]
+                    ++targetIndex;
+                }
             }
         }
         
@@ -516,48 +522,50 @@
     // 3.1: chicken around biteArte
     // 3.2: chicken and biteArte
     
-    var deadChickenRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const deadChickenRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Dead chicken";
             }
         }
         
-        var angle = chapterOffset * 19 + 10000;
+        const angle = chapterOffset * 19 + 10000;
         
         context.fillStyle = "#441010";
         context.fillRect(0, 0, width, height);
         
-        var x = halfWidth / 2 * sinus[angle & 65535],
+        let x = halfWidth / 2 * sinus[angle & 65535],
             x2 = halfWidth / 2 * sinus[(angle + 32768) & 65535]
-        var z = sinus[(angle + 16384) & 65535],
+        const z = sinus[(angle + 16384) & 65535],
             z2 = -z;
-        var mult = 2 / (2 - z),
+        const mult = 2 / (2 - z),
             mult2 = 2 / (2 - z2);
         x *= mult;
         x2 *= mult2;
         
-        var biteWidth = biteArte.width;
-        var biteHeight = biteArte.height;
+        const biteWidth = biteArte.width;
+        const biteHeight = biteArte.height;
         
-        var chickenWidth = deadChicken.width;
-        var chickenHeight = deadChicken.height;
+        const chickenWidth = deadChicken.width;
+        const chickenHeight = deadChicken.height;
+
+        let w, h, w2, h2;
         
         switch (subId) {
             case 0:
                 context.globalAlpha = chapterComplete < 0.2 ? chapterComplete * 5 :
                                       chapterComplete < 0.8 ? 1 :
                                       (5 - chapterComplete * 5);
-                var w = biteWidth * mult;
-                var h = biteHeight * mult;
+                w = biteWidth * mult;
+                h = biteHeight * mult;
                 context.drawImage(biteArte, halfWidth + x - w / 2, halfHeight - h / 2, w, h);
                 break;
             case 1:
                 context.globalAlpha = chapterComplete < 0.2 ? chapterComplete * 5 :
                                       chapterComplete < 0.8 ? 1 :
                                       (5 - chapterComplete * 5);
-                var w = chickenWidth * mult;
-                var h = chickenHeight * mult;
+                w = chickenWidth * mult;
+                h = chickenHeight * mult;
                 if (z > 0) {
                     context.drawImage(biteArte, halfWidth - biteWidth / 2, halfHeight - biteHeight / 2);
                 }
@@ -570,10 +578,10 @@
                 context.globalAlpha = chapterComplete < 0.1 ? chapterComplete * 10 :
                                       chapterComplete < 0.9 ? 1 :
                                       (10 - chapterComplete * 10);
-                var w = biteWidth * mult;
-                var h = biteHeight * mult;
-                var w2 = chickenWidth * mult2;
-                var h2 = chickenHeight * mult2;
+                w = biteWidth * mult;
+                h = biteHeight * mult;
+                w2 = chickenWidth * mult2;
+                h2 = chickenHeight * mult2;
 
                 if (z2 > 0) {
                     context.drawImage(biteArte, halfWidth + x - w / 2, halfHeight - h / 2, w, h);
@@ -588,44 +596,44 @@
     
     // *** Globe effect (renderer 4)
     
-    var globeCanvas, globeContext, globeImageData, globeMultTable,
+    let globeCanvas, globeContext, globeImageData, globeMultTable,
         globe, globeDoodles, globeDoodleBits;
     
-    var prepareGlobe = function() {
+    const prepareGlobe = function() {
         globeCanvas = create("CANVAS");
         globeCanvas.width = globeCanvas.height = 224;
         globeContext = globeCanvas.getContext("2d");
         globeImageData = globeContext.createImageData(224, 224);
         
-        var mults = [];
+        const mults = [];
         
-        for (var x = 0; x <= 224; ++x) {
-            var fromNegToPos = x / 112 - 1;
-            var arccos = Math.acos(fromNegToPos);
-            var sin = Math.sin(arccos);
+        for (let x = 0; x <= 224; ++x) {
+            const fromNegToPos = x / 112 - 1;
+            const arccos = Math.acos(fromNegToPos);
+            const sin = Math.sin(arccos);
             mults.push(sin);
         }
         
         globeMultTable = mults;
         
-        var tempCanvas = create("CANVAS");
+        const tempCanvas = create("CANVAS");
         tempCanvas.width = 512;
         tempCanvas.height = 512;
-        var tempContext = tempCanvas.getContext("2d");
+        const tempContext = tempCanvas.getContext("2d");
         tempContext.clearRect(0, 0, 512, 512);
         tempContext.drawImage(globeDoodles, 0, 0);
-        var tempData = tempContext.getImageData(0, 0, 512, 512).data;
+        const tempData = tempContext.getImageData(0, 0, 512, 512).data;
         globeDoodleBits = Array(512 * 512);
-        var index = 0;
-        for (var y = 0; y < 512; ++y) {
-            for (var x = 0; x < 512; ++x) {
+        let index = 0;
+        for (let y = 0; y < 512; ++y) {
+            for (let x = 0; x < 512; ++x) {
                 globeDoodleBits[index] = (tempData[index * 4] > 128) ? 112 : 0;
                 ++index;
             }
         }
     };
     
-    var globeRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const globeRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Globe";
@@ -635,33 +643,33 @@
         context.fillStyle = "#110000";
         context.fillRect(0, 0, width, height);
         
-        var w = globe.width;
-        var h = globe.height;
+        const w = globe.width;
+        const h = globe.height;
         
         context.drawImage(globe, halfWidth - w, halfHeight - h, w * 2, h * 2);
         
-        var buffer = globeImageData.data;
+        const buffer = globeImageData.data;
         
-        var xOffset = (sinus[(chapterOffset * 23) & 0xffff] * ((512 - 224) / 2) + 256 - 112) | 0;
-        var yOffset = (sinus[(chapterOffset * 17) & 0xffff] * ((512 - 224) / 2) + 256 - 112) | 0;
+        const xOffset = (sinus[(chapterOffset * 23) & 0xffff] * ((512 - 224) / 2) + 256 - 112) | 0;
+        const yOffset = (sinus[(chapterOffset * 17) & 0xffff] * ((512 - 224) / 2) + 256 - 112) | 0;
         
-        var index = 0;
-        for (var y = 0; y <= 223; ++y) {
-            for (var x = 0; x <= 223; ++x) {
-                var alpha = 0;
+        let index = 0;
+        for (let y = 0; y <= 223; ++y) {
+            for (let x = 0; x <= 223; ++x) {
+                let alpha = 0;
                 buffer[index++] = 255;
                 buffer[index++] = 255;
                 buffer[index++] = 255;
                 
-                var yMult = globeMultTable[x];
+                const yMult = globeMultTable[x];
                 
                 if (yMult > 0) {
-                    var yFromMiddle = y - 112;
-                    var trueYFromMiddle = (yFromMiddle / yMult) | 0;
-                    var trueY = trueYFromMiddle + 112;
+                    const yFromMiddle = y - 112;
+                    const trueYFromMiddle = (yFromMiddle / yMult) | 0;
+                    const trueY = trueYFromMiddle + 112;
                     
                     if (trueY >= 0 && trueY <= 223) {
-                        var fetch = (trueY + yOffset) * 512 + x + xOffset;
+                        const fetch = (trueY + yOffset) * 512 + x + xOffset;
                         alpha = globeDoodleBits[fetch];
                     }
                 }
@@ -681,7 +689,7 @@
         }
         
         if (chapterComplete > 0.95) {
-            var alpha = chapterComplete * 20 - 19;
+            const alpha = chapterComplete * 20 - 19;
             context.fillStyle = "rgba(0,0,0," + alpha.toFixed(3) + ")";
             context.fillRect(0, 0, width, height);
         }
@@ -694,10 +702,10 @@
     // 5.2: Einstein
     // 5.3: Sanity 2
     
-    var sanity1, madman, einstein, sanity2;
-    var simpleImages = [];
+    let sanity1, madman, einstein, sanity2;
+    const simpleImages = [];
     
-    var prepareSimpleImages = function() {
+    const prepareSimpleImages = function() {
         simpleImages.push({
             fadeFrom : "#ffffff",
             fadeTo : "#000000",
@@ -724,7 +732,7 @@
         });
     };
     
-    var simpleImageRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const simpleImageRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Simple image";
@@ -734,10 +742,10 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 0, width, height);
         
-        var imageData = simpleImages[subId];
-        var image = imageData.image;
-        var iw = image.width * imageData.scale;
-        var ih = image.height * imageData.scale;
+        const imageData = simpleImages[subId];
+        const image = imageData.image;
+        const iw = image.width * imageData.scale;
+        const ih = image.height * imageData.scale;
         context.drawImage(image, halfWidth - (iw >> 1), halfHeight - (ih >> 1), iw, ih);
         
         if (chapterOffset < 500) {
@@ -745,8 +753,8 @@
             context.fillStyle = imageData.fadeFrom;
             context.fillRect(0, 0, width, height);
         } else {
-            var totalTime = chapterOffset / chapterComplete;
-            var timeLeft = totalTime - chapterOffset;
+            const totalTime = chapterOffset / chapterComplete;
+            const timeLeft = totalTime - chapterOffset;
             
             if (timeLeft < 500) {
                 context.globalAlpha = (1 - timeLeft / 500);
@@ -761,8 +769,8 @@
     // 6.0: HTML5 logo coming towards the viewer
     // 6.1: Starfield
     
-    var html5Coords = (function() {
-        var lines = [
+    const html5Coords = (function() {
+        const lines = [
             { x1 : 31, y1 : 0, x2 : 481, y2: 0},
             { x1 : 481, y1 : 0, x2 : 440, y2 : 460},
             { x1 : 440, y1 : 460, x2 : 256, y2 : 511},
@@ -795,16 +803,16 @@
             { x1 : 129, y1 : 264, x2 : 114, y2 : 94}
         ];
         
-        var result = [];
+        const result = [];
         
-        var lineIndex = 0;
-        var totalStars = 0;
-        var distSteps = 80;
-        var dist = 0;
-        var firstTimeAround = true;
+        let lineIndex = 0;
+        let totalStars = 0;
+        let distSteps = 80;
+        let dist = 0;
+        let firstTimeAround = true;
         while (distSteps > 10) {
-            var line = lines[lineIndex];
-            var totalDist = Math.sqrt((line.x2-line.x1)*(line.x2-line.x1) + (line.y2-line.y1)*(line.y2-line.y1));
+            const line = lines[lineIndex];
+            const totalDist = Math.sqrt((line.x2-line.x1)*(line.x2-line.x1) + (line.y2-line.y1)*(line.y2-line.y1));
             if (firstTimeAround && dist == 0) {
                 dist = 0.1;
             } else if (dist == 0) {
@@ -823,9 +831,9 @@
                     }
                 }
             } else {
-                var x = line.x1 - 256 + (dist / totalDist * (line.x2 - line.x1));
-                var y = line.y1 - 256 + (dist / totalDist * (line.y2 - line.y1));
-                var z = Math.abs(x) * 0.1;
+                const x = line.x1 - 256 + (dist / totalDist * (line.x2 - line.x1));
+                const y = line.y1 - 256 + (dist / totalDist * (line.y2 - line.y1));
+                const z = Math.abs(x) * 0.1;
                 result.push({x : x, y : y, z : z});
                 ++totalStars;
             }
@@ -834,9 +842,9 @@
         return result;
     })();
     
-    var starsRandomCoords = (function() {
-        var result = [];
-        for (var i = 0; i < 1000; ++i) {
+    const starsRandomCoords = (function() {
+        const result = [];
+        for (let i = 0; i < 1000; ++i) {
             result.push(
                         {
                             x : rnd() * 1024 - 512,
@@ -848,7 +856,7 @@
         return result;
     })();
     
-    var limitStarCoord = function(composant) {
+    const limitStarCoord = function(composant) {
         if (composant > 512) {
             return composant - 1024 * Math.floor((composant + 512) / 1024);
         } else if (composant < -512) {
@@ -858,17 +866,17 @@
         }
     }
     
-    var phaseXStarts = 14000;
-    var beatStarts = 15100; // 15.1 seconds into subId 1
+    const phaseXStarts = 14000;
+    const beatStarts = 15100; // 15.1 seconds into subId 1
     
-    var starsRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const starsRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff, quality) {
         if (dev) {
             if (subId == "getName") {
                 return "Stars";
             }
         }
         
-        var fade = 1;
+        let fade = 1;
         if (chapterComplete > 0.95) {
             fade = (1 - chapterComplete) * 20;
         }
@@ -876,7 +884,7 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 0, width, height);
         
-        var coords, phaseX, phaseY, phaseZ, offsetZ, maxStars;
+        let coords, phaseX, phaseY, phaseZ, offsetZ, maxStars;
         
         switch (subId) {
             case 0:
@@ -888,7 +896,7 @@
                     chapterComplete = chapterOffset / 4000;
                 }
                 offsetZ = 1024 - chapterComplete * 2048;
-                maxStars = chapterOffset / 4;
+                maxStars = chapterOffset / 4 * quality;
                 break;
             case 1:
                 // random stars
@@ -896,9 +904,9 @@
                 offsetZ = 0;
                 //phaseZ = sinus[chapterOffset] * 2048;
                 phaseX = phaseY = phaseZ = offsetZ = 0;
-                maxStars = chapterOffset / 4;
+                maxStars = chapterOffset / 4 * quality;
                 phaseZ = -chapterOffset / 10;
-                var weight = 0;
+                let weight = 0;
                 if (chapterOffset > 6000) {
                     weight = 1;
                 } else if (chapterOffset > 2000) {
@@ -927,25 +935,22 @@
         
         context.fillStyle = "#ffffff";
         
-        for (var i = 0; i < maxStars; ++i) {
-            var star = coords[i];
+        for (let i = 0; i < maxStars; ++i) {
+            const star = coords[i];
             
             // Phase
-            var x = limitStarCoord(star.x + phaseX);
-            var y = limitStarCoord(star.y + phaseY);
-            var z = limitStarCoord(star.z + phaseZ);
-            
-            // Offset:
-            z += offsetZ;
+            const x = limitStarCoord(star.x + phaseX);
+            const y = limitStarCoord(star.y + phaseY);
+            const z = limitStarCoord(star.z + phaseZ) + offsetZ;
             
             if (z > -1000 && z < 1000) {
-                var zMultFactor = 512 / (z + 1024);
+                const zMultFactor = 512 / (z + 1024);
                 
-                var screenX = halfWidth + zMultFactor * x;
-                var screenY = halfHeight + zMultFactor * y;
+                const screenX = halfWidth + zMultFactor * x;
+                const screenY = halfHeight + zMultFactor * y;
                 
-                if (screenX > 0 && screenX < width && screenY > 0 && screenY < height) {
-                    var alpha = (512 - z) / 1024;
+                if (screenX >= 0 && screenX < width && screenY >= 0 && screenY < height) {
+                    let alpha = (512 - z) / 1024;
                     if (alpha < 0) alpha = 0; else if (alpha > 1) alpha = 1;
                     context.globalAlpha = alpha * fade;
                     context.fillRect(screenX, screenY, 2, 2);
@@ -953,10 +958,10 @@
             }
         }
         
-        var beatOffset = chapterOffset - beatStarts;
+        let beatOffset = chapterOffset - beatStarts;
         
         if (beatOffset >= 0) {
-            var beatNumber = (beatOffset / 480 / 8) | 0;
+            const beatNumber = (beatOffset / 480 / 8) | 0;
             beatOffset = (beatOffset % 480) | 0;
             
             if (beatOffset < 240) {
@@ -999,15 +1004,15 @@
     
     // *** Fat Buddha scene (renderer 7)
     
-    var buddha, buddhaBits, buddhaCanvas, buddhaContext, buddhaData;
-    var buddhaSceneWidth = 100, buddhaSceneHeight = 100;
-    var buddhaFinalScale = 4, buddhaHalfFinalScale = buddhaFinalScale / 2;
+    let buddha, buddhaBits, buddhaCanvas, buddhaContext, buddhaData;
+    const buddhaSceneWidth = 100, buddhaSceneHeight = 100;
+    const buddhaFinalScale = 4, buddhaHalfFinalScale = buddhaFinalScale / 2;
     
-    var buddhaPrepare = function() {
+    const buddhaPrepare = function() {
         // Fetch bits from buddhaBits
-        var tempCanvas = create("CANVAS");
+        const tempCanvas = create("CANVAS");
         tempCanvas.width = tempCanvas.height = 128;
-        var tempContext = tempCanvas.getContext("2d");
+        const tempContext = tempCanvas.getContext("2d");
         tempContext.drawImage(buddha, 0, 0);
         buddhaBits = tempContext.getImageData(0, 0, 128, 128);
         
@@ -1019,7 +1024,7 @@
         buddhaData = buddhaContext.createImageData(buddhaSceneWidth, buddhaSceneHeight);
     };
     
-    var fatBuddhaRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const fatBuddhaRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Fat Buddha";
@@ -1030,60 +1035,60 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 0, width, height);
         
-        var angle1 = 65536 * (sinus[(smoothComplete(chapterComplete) * 65536) & 0xffff] * 1.5 - 0.5);
-        var scale1 = smoothComplete(chapterComplete) * 0.5 + 0.5;
+        const angle1 = 65536 * (sinus[(smoothComplete(chapterComplete) * 65536) & 0xffff] * 1.5 - 0.5);
+        const scale1 = smoothComplete(chapterComplete) * 0.5 + 0.5;
         
-        var angle2 = smoothComplete(chapterComplete) * 65536 * 4;
-        var scale2 = (chapterComplete < 0.8) ? 0.5 :
+        const angle2 = smoothComplete(chapterComplete) * 65536 * 4;
+        const scale2 = (chapterComplete < 0.8) ? 0.5 :
                      (chapterComplete < 0.9) ? 0.5 - (chapterComplete - 0.8) * 2.5 :
                      smoothComplete((chapterComplete - 0.9) * 10) * 3.75 + 0.25;
 //        var scale2 = (chapterComplete < 0.7) ? 0.25 : smoothComplete((chapterComplete - 0.7) / 0.3) * 3.75 + 0.25
         
-        var offsetX1 = sinus[angle2 & 65535] * 80 + 50;
-        var offsetY1 = sinus[(angle2 + 23000) & 65535] * 72;
+        const offsetX1 = sinus[angle2 & 65535] * 80 + 50;
+        const offsetY1 = sinus[(angle2 + 23000) & 65535] * 72;
         
-        var offsetX2 = sinus[angle1 & 65535] * 50 + 52;
-        var offsetY2 = -40;
+        const offsetX2 = sinus[angle1 & 65535] * 50 + 52;
+        const offsetY2 = -40;
         
         // Fetch bits from buddhaBits, draw onto buddhaCanvas (via buddhaData);
-        var sourceData = buddhaBits.data;
-        var targetData = buddhaData.data;
-        var targetIndex = 0;
-        for (var y = 0; y < buddhaSceneHeight; ++y) {
-            for (var x = 0; x < buddhaSceneWidth; ++x) {
-                var yy = y - buddhaSceneHeight / 2;
-                var xx = x - buddhaSceneWidth / 2;
+        const sourceData = buddhaBits.data;
+        const targetData = buddhaData.data;
+        let targetIndex = 0;
+        for (let y = 0; y < buddhaSceneHeight; ++y) {
+            for (let x = 0; x < buddhaSceneWidth; ++x) {
+                const yy = y - buddhaSceneHeight / 2;
+                const xx = x - buddhaSceneWidth / 2;
                 
-                var ya1 = yy * sinus[(angle1 + 16384) & 65535] + xx * sinus[angle1 & 65535];
-                var xa1 = xx * sinus[(angle1 + 16384) & 65535] - yy * sinus[angle1 & 65535];
+                let ya1 = yy * sinus[(angle1 + 16384) & 65535] + xx * sinus[angle1 & 65535];
+                let xa1 = xx * sinus[(angle1 + 16384) & 65535] - yy * sinus[angle1 & 65535];
                 xa1 -= offsetX1;
                 ya1 -= offsetY1;
                 ya1 /= scale1;
                 xa1 /= scale1;
                 
-                var ya2 = yy * sinus[(angle2 + 16384) & 65535] + xx * sinus[angle2 & 65535];
-                var xa2 = xx * sinus[(angle2 + 16384) & 65535] - yy * sinus[angle2 & 65535];
+                let ya2 = yy * sinus[(angle2 + 16384) & 65535] + xx * sinus[angle2 & 65535];
+                let xa2 = xx * sinus[(angle2 + 16384) & 65535] - yy * sinus[angle2 & 65535];
                 ya2 /= scale2;
                 xa2 /= scale2;
                 xa2 -= offsetX2;
                 ya2 -= offsetY2;
                 
-                var secondWeight = (x + y - buddhaSceneWidth * 2) / (buddhaSceneWidth * 2) + chapterComplete * 2;
+                let secondWeight = (x + y - buddhaSceneWidth * 2) / (buddhaSceneWidth * 2) + chapterComplete * 2;
 //                var secondWeight = (x * 1.5 + y * 1.5 - buddhaSceneWidth - buddhaSceneHeight) / ((buddhaSceneWidth + buddhaSceneHeight) * 2) + chapterComplete * 3 - 1;
                 
                 if (secondWeight < 0) secondWeight = 0;
                 if (secondWeight > 1) secondWeight = 1;
                 
-                var x2 = xa1 * (1 - secondWeight) + xa2 * secondWeight;
-                var y2 = ya1 * (1 - secondWeight) + ya2 * secondWeight;
+                let x2 = xa1 * (1 - secondWeight) + xa2 * secondWeight;
+                let y2 = ya1 * (1 - secondWeight) + ya2 * secondWeight;
                 
                 x2 = x2 & 127;
                 y2 = y2 & 127;
-                var sourceIndex = (y2 * 128 + x2) * 4;
+                const sourceIndex = (y2 * 128 + x2) * 4;
                 
-                targetData[targetIndex++] = sourceData[sourceIndex++];
-                targetData[targetIndex++] = sourceData[sourceIndex++];
-                targetData[targetIndex++] = sourceData[sourceIndex++];
+                targetData[targetIndex++] = sourceData[sourceIndex];
+                targetData[targetIndex++] = sourceData[sourceIndex + 1];
+                targetData[targetIndex++] = sourceData[sourceIndex + 2];
                 targetData[targetIndex++] = 255;
             }
         }
@@ -1120,9 +1125,9 @@
     // 8.0: Hail Salvadore...
     // 8.1: ...true artists
     
-    var hailSalvadore, trueArtists;
+    let hailSalvadore, trueArtists;
     
-    var hailSalvadoreData = [
+    const hailSalvadoreData = [
         { from: 0,    x: 78,  y: 0,   w: 131, h: 81 }, // Head
         { from: 800,  x: 0,   y: 91,  w: 69,  h: 22 }, // hail
         { from: 1200, x: 85,  y: 91,  w: 216, h: 22 }, // salvadore
@@ -1133,7 +1138,7 @@
         { from: 3400, x: 128, y: 181, w: 151, h: 23 }  // loonies
     ];
     
-    var trueArtistsData = [
+    const trueArtistsData = [
         { from: 0,    x: 67,  y: 0,   w: 70,  h: 16  }, // are
         { from: 800,  x: 10,  y: 34,  w: 48,  h: 18  }, // the
         { from: 1100, x: 0,   y: 53,  w: 60,  h: 35  }, // only (left part)
@@ -1143,7 +1148,7 @@
         { from: 2900, x: 41,  y: 154, w: 128, h: 100 }  // Head
     ];
     
-    var hailSalvadoreRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
+    const hailSalvadoreRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Hail Salvadore";
@@ -1154,22 +1159,22 @@
         context.fillStyle = "#000000";
         context.fillRect(0, 0, width, height);
         
-        var data = subId ? trueArtistsData : hailSalvadoreData;
-        var img = subId ? trueArtists : hailSalvadore;
-        var offsetY = subId ? 0 : 60;
-        var offsetX = halfWidth - img.width / 2;
+        const data = subId ? trueArtistsData : hailSalvadoreData;
+        const img = subId ? trueArtists : hailSalvadore;
+        const offsetY = subId ? 0 : 60;
+        const offsetX = halfWidth - img.width / 2;
         
         context.globalAlpha = (chapterComplete < 0.9) ? 1 : (10 - chapterComplete * 10);
         
-        for (var i = 0; i < data.length; ++i) {
-            var item = data[i];
+        for (let i = 0; i < data.length; ++i) {
+            const item = data[i];
             if (chapterOffset > item.from) {
                 context.drawImage(img, item.x, item.y, item.w, item.h, item.x + offsetX, item.y * 2 + offsetY, item.w, item.h * 2);
             }
         }
     };
     
-    var renderers = [
+    const renderers = [
             introTextRenderer,
             discTunnelRenderer,
             bitmapTunnelRenderer,
@@ -1179,9 +1184,9 @@
             starsRenderer,
             fatBuddhaRenderer,
             hailSalvadoreRenderer
-        ],
+        ];
 
-    chapters = [
+    const chapters = [
         {
             from : 0,
             to : 4700,
@@ -1289,21 +1294,20 @@
             subId : 1
         },
         false
-    ],
+    ];
     
-    preCalcSinusTables = function() {
-        var sin = [];
-        var pi = 4 * Math.atan(1);
+    const preCalcSinusTables = function() {
+        const sin = [];
         
-        for (var i = 0; i <= 65535; ++i) {
-            var value = Math.sin(i * pi / 32768);
+        for (let i = 0; i <= 65535; ++i) {
+            const value = Math.sin(i * pi / 32768);
             sin.push(value);
         }
         
         sinus = sin;
-    },
+    };
 
-    precalcs = [
+    const precalcs = [
         preCalcSinusTables,
         prepareGlobe,
         prepareSimpleImages,
