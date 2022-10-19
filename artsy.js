@@ -1,3 +1,5 @@
+'use strict';
+
 // ==ClosureCompiler==
 // @compilation_level ADVANCED_OPTIMIZATIONS
 // @output_file_name artsy.min.js
@@ -30,25 +32,8 @@
     const dev = false;
     const autoplay = true;
     const showFrame = false;
-    const rnd = Math.random;
-    const create = (elementName) => document.createElement(elementName);
     let timeOffset = 0;
     let frameDiff = 1;
-    
-    const solidColor = (r, g, b) => "rgba(" + (r|0) + "," + (g|0) + "," + (b|0) + ",1)";
-    
-    const now = () => (new Date).getTime();
-    
-    const width = 640;
-    const height = 512;
-    
-    const pi = 4 * Math.atan(1);
-    
-    const halfWidth = width / 2;
-    const halfHeight = height / 2;
-    const largestHalf = Math.max(halfWidth, halfHeight);
-    
-    const smoothComplete = chapterComplete => (1 - Math.cos(chapterComplete * pi)) / 2;
 
     let canvas, context, sinus, currentQuality,
         lastTime, startTime, currentTime, currentChapterIndex = 0, currentRenderer,
@@ -88,7 +73,7 @@
     // 0.1: So just straight off the tricycle
     // 0.2: Whaaaaat??
     
-    const introTextRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    const introTextRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Intro/midtro text";
@@ -100,13 +85,11 @@
         context.textAlign = "center";
         context.textBaseline = "top";
         
-        if (subId != 2) {
-            context.scale(-0.5, 1);
-        }
         let globalAlpha;
 
         switch (subId) {
             case 0:
+                context.scale(-0.5, 1);
                 globalAlpha = (chapterOffset >= 4300) ? (4700 - chapterOffset) / 400 : 1;
                 context.fillStyle = solidColor(0xbb * globalAlpha, 0xaa * globalAlpha, 0xaa * globalAlpha);
                 
@@ -136,6 +119,7 @@
                 }
                 break;
             case 1:
+                context.scale(-0.5, 1);
                 globalAlpha = (chapterOffset >= 3300) ? (3700 - chapterOffset) / 400 : 1;
                 context.fillStyle = solidColor(0x99 * globalAlpha, 0x88 * globalAlpha, 0x88 * globalAlpha);
                 
@@ -198,7 +182,7 @@
         {r : 96, g : 240, b : 255}
     ];
     
-    var discTunnelRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var discTunnelRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Disc tunnel";
@@ -352,7 +336,7 @@
     
     const hangingWallDistance = 120;
     
-    const bitmapTunnelRenderer = (subId, chapterOffset, chapterComplete, frameDiff) => {
+    const bitmapTunnelRenderer = (canvas, context, subId, chapterOffset, chapterComplete, frameDiff) => {
         if (dev) {
             if (subId == "getName") {
                 return "Bitmap tunnel";
@@ -532,7 +516,7 @@
     // 3.1: chicken around biteArte
     // 3.2: chicken and biteArte
     
-    var deadChickenRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var deadChickenRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Dead chicken";
@@ -641,7 +625,7 @@
         }
     };
     
-    var globeRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var globeRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Globe";
@@ -740,7 +724,7 @@
         });
     };
     
-    var simpleImageRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var simpleImageRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Simple image";
@@ -877,7 +861,7 @@
     var phaseXStarts = 14000;
     var beatStarts = 15100; // 15.1 seconds into subId 1
     
-    var starsRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var starsRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Stars";
@@ -1035,7 +1019,7 @@
         buddhaData = buddhaContext.createImageData(buddhaSceneWidth, buddhaSceneHeight);
     };
     
-    var fatBuddhaRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var fatBuddhaRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Fat Buddha";
@@ -1159,7 +1143,7 @@
         { from: 2900, x: 41,  y: 154, w: 128, h: 100 }  // Head
     ];
     
-    var hailSalvadoreRenderer = function(subId, chapterOffset, chapterComplete, frameDiff) {
+    var hailSalvadoreRenderer = function(canvas, context, subId, chapterOffset, chapterComplete, frameDiff) {
         if (dev) {
             if (subId == "getName") {
                 return "Hail Salvadore";
@@ -1318,277 +1302,20 @@
         
         sinus = sin;
     },
-    
-    preCalc = function() {
-        preCalcSinusTables();
-        prepareGlobe();
-        prepareSimpleImages();
-        bitmapTunnelPrepare();
-        buddhaPrepare();
-    },
-    
-    animFrame = function(time) {
-        if (startTime) {
-            frameDiff = (time - lastTime) / 1000 * 60;
-            
-            timeOffset = time - startTime;
-            
-            var currentChapter = dev ? chapters[select.value] : chapters[currentChapterIndex];
-            if (dev) {
-                currentChapter.to -= currentChapter.from;
-                currentChapter.from = 0;
-            }
-            if (currentChapter && (timeOffset >= currentChapter.to)) {
-                ++currentChapterIndex;
-                currentChapter = chapters[currentChapterIndex];
-            }
-            
-            
-            if (currentChapter) {
-                var chapterTime = timeOffset - currentChapter.from;
-                var chapterComplete = chapterTime / (currentChapter.to - currentChapter.from);
-                currentRenderer = renderers[currentChapter.rendererIndex];
-                
-                var starting = now();
-                context.globalAlpha = 1;
-                context.save();
-                currentRenderer.call(this, currentChapter.subId, chapterTime, chapterComplete, frameDiff);
-                context.restore();
-            } else {
-                playing = false;
-            }
-            
-            var ended = now();
-            var ms = ended - starting;
-            var qualityStep = (22 - ms - 10 * frameDiff) / 200;
-            if (qualityStep > 0) {
-                qualityStep *= 0.005;
-            }
-            var newQuality = currentQuality + qualityStep;
-            if (newQuality > 1) {
-                newQuality = 1;
-            } else if (newQuality < 0.1) {
-                newQuality = 0.1;
-            }
-            currentQuality = newQuality;
-            
-            if (showFrame || dev) {
-                context.fillStyle = "#000000";
-                context.fillRect(0, 0, 60, 13);
-                context.fillStyle = "#ffffff";
-                context.font = "10px Helvetica";
-                context.textAlign = "right";
-                context.textBaseline = "top";
-                context.fillText((timeOffset / 1000).toFixed(3).replace('.',':'), 60, 0);
-            }
-        }
-        
-        if (currentTime) {
-            if (currentTime < 1) {
-//            if (!lastTime) {
-                startTime = time - 1000 * currentTime - 250;
-            }
-            lastTime = time;
-        }
-        
-        if (playing) {
-            requestAnimationFrame(animFrame);
-        } else {
-            var event = document.createEvent("Event");
-            event.initEvent("demoDone", true, true);
-            
-            window.dispatchEvent(event);
-        }
-    },
-    
-    onplay = function() {
-        playing = true;
-        requestAnimationFrame(animFrame);
-    },
-    
-    ontimeupdate = function(event) {
-        currentTime = this.currentTime;
-    },
-    
-    areLoading = [],
-    totalLoadingAdded = 0,
-    
-    addToLoading = function(item) {
-        areLoading.push(item);
-        ++totalLoadingAdded;
 
-        var event = document.createEvent("Event");
-        event.initEvent("itemsLoader", true, true);
-        event.total = totalLoadingAdded;
-        event.done = totalLoadingAdded - areLoading.length;
-        
-        window.dispatchEvent(event);
-    },
+    precalcs = [
+        preCalcSinusTables,
+        prepareGlobe,
+        prepareSimpleImages,
+        bitmapTunnelPrepare,
+        buddhaPrepare
+    ];
     
-    loadingDone = function(item) {
-        var newLoading = [];
-        for (var i = 0; i < areLoading.length; ++i) {
-            if (areLoading[i] != item) {
-                newLoading.push(areLoading[i]);
-            }
-        }
-        areLoading = newLoading;
-        
-        var event = document.createEvent("Event");
-        event.initEvent("itemsLoader", true, true);
-        event.total = totalLoadingAdded;
-        event.done = totalLoadingAdded - areLoading.length;
-        
-        window.dispatchEvent(event);
-    },
-    
-    audioProgressTimerId = null,
-    
-    onIpadAudioProgressHack = function(audio) {
-        audioProgressTimerId = null;
-        audio.removeEventListener("progress", onAudioProgress, false);
-        loadingDone(audio);
-    },
-    
-    onAudioProgress = function(event) {
-        if (audioProgressTimerId) {
-            window.clearTimeout(audioProgressTimerId);
-        }
-        var audio = this;
-        audioProgressTimerId = window.setTimeout(function() { onIpadAudioProgressHack(audio); }, 2000);
-    },
-    
-    onAudioCanPlay = function(event) {
-        if (audioProgressTimerId) {
-            window.clearTimeout(audioProgressTimerId);
-            audioProgressTimerId = null;
-        }
-        this.removeEventListener("progress", onAudioProgress, false);
-        loadingDone(this);
-    },
-    
-    loadAudio = function(oggSource, mp3Source) {
-        // returns a reference to the AUDIO element
-        var audio = create("AUDIO");
-        audio.controls = true;
-        audio.preload = "auto";
-        
-        addToLoading(audio);
-        
-        audio.addEventListener("play", onplay, false);
-        audio.addEventListener("timeupdate", ontimeupdate, false);
-        audio.addEventListener("progress", onAudioProgress, false);
-        audio.addEventListener("canplay", onAudioCanPlay, false);
-        
-        var canPlayOgg = audio.canPlayType("audio/ogg");
-        var canPlayMp3 = audio.canPlayType("audio/mpeg");
-        
-        if (canPlayOgg == "probably" || (canPlayOgg == "maybe" && canPlayMp3 != "probably")) {
-            audio.src = oggSource;
-        } else if (canPlayMp3 == "probably" || canPlayMp3 == "maybe") {
-            audio.src = mp3Source;
-        }
-        
-        audio.load();
-        
-        return audio;
-    },
-    
-    onImageLoad = function() {
-        loadingDone(this);
-    },
-    
-    loadImage = function(src) {
-        var image = new Image();
-        
-        addToLoading(image);
-        
-        image.addEventListener("load", onImageLoad, false);
-        image.src = src + "?ts=" + now();
-        
-        return image;
-    },
-    
-    startingTimerId = null;
-    
-    onLoadingDone = function() {
-        if (startingTimerId) {
-            window.clearTimeout(startingTimerId);
-            startingTimerId = null;
-        }
-        
-        preCalc();
-        
-        try {
-            livininsanity.play();
-        }
-        catch (e) {
-
-        }
-    };
-    
-    onItemsLoader = function(event) {
-        if (startingTimerId) {
-            window.clearTimeout(startingTimerId);
-            startingTimerId = null;
-        }
-        
-        context.fillStyle = "#000000"
-        context.fillRect(0, 0, width, height);
-        context.fillStyle = "#000073";
-        context.strokeStyle = "#000073";
-        context.lineWidth = 50;
-        context.lineCap = "round";
-        
-        context.beginPath();
-        context.moveTo(halfWidth - 200, halfHeight);
-        context.lineTo(halfWidth + 200, halfHeight);
-        context.stroke();
-        
-        if (event.done < event.total) {
-            context.strokeStyle = "#000000";
-            context.lineWidth = 40;
-            context.beginPath();
-            context.moveTo(halfWidth - 200, halfHeight);
-            context.lineTo(halfWidth + 200, halfHeight);
-            context.stroke();
-            
-            context.strokeStyle = "#000073";
-            context.lineWidth = 41;
-            context.beginPath();
-            context.moveTo(halfWidth - 200, halfHeight);
-            context.lineTo(halfWidth - 200 + (400 * event.done / event.total), halfHeight);
-            context.stroke();
-        }
-        
-        if (event.done == event.total) {
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.font = "20px sans-serif";
-            context.fillStyle = "#8080e6";
-            context.fillText("Click to start...", halfWidth, halfHeight + 40);
-            
-            if (autoplay) {
-                window.setTimeout(onLoadingDone, 1);
-            }
-            
-            canvas.addEventListener("click", onLoadingDone, false);
-        }
-    },
-    
-    onDemoDone = function() {
+    const onDemoDone = function() {
         window.location.href = "part-2/";
-    },
-    
-    onload = function() {
-        canvas = document.getElementById("demo");
-        context = canvas.getContext("2d");
-        
-        playing = false;
-        
-        window.addEventListener("itemsLoader", onItemsLoader, false);
-        window.addEventListener("demoDone", onDemoDone, false);
-        
+    };
+
+    const loadResources = () => {
         livininsanity = loadAudio("livin-insanity.ogg", "livin-insanity.mp3");
         whaaaaat = loadImage("whaaaaat.png");
         biteArte = loadImage("biteArte2.png");
@@ -1605,26 +1332,10 @@
         buddha = loadImage("seventies.png");
         hailSalvadore = loadImage("hailSalvadore.png");
         trueArtists = loadImage("trueArtists.png");
-        
-        if (dev) {
-            select = document.createElement("SELECT");
-            for (var i = 0; i < chapters.length - 1; ++i) {
-                var chapter = chapters[i];
-                var name = renderers[chapter.rendererIndex]("getName") + ", part " + chapter.subId;
-                var option = document.createElement("OPTION");
-                option.value = i;
-                option.appendChild(document.createTextNode(name));
-//                if (i == 0) {
-//                    option.selected = true;
-//                }
-                if (chapter.rendererIndex == 2) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            }
-            document.body.insertBefore(select, document.body.firstChild);
-        }
     };
 
-    window.onload = onload;
+    const play = () => livininsanity.play();
+    
+    demo(renderers, chapters, precalcs, loadResources, play, onDemoDone);
+
 })();
