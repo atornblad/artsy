@@ -90,7 +90,7 @@ const tracker = async (url) => {
         throw new Error(`ModTracker Could not fetch ${url}: ${response.status}`)
     }
     const data = await response.arrayBuffer();
-    debug.dump(data, 32768);
+    //debug.dump(data, 32768);
 
     // Magic string 'M.K.' at offset 0x438
     if (data.byteLength < 0x43c) {
@@ -158,7 +158,6 @@ const tracker = async (url) => {
     };
 
     const play = async () => {
-        console.log(`TODO: play ${songName}`);
         if (playing) return;
         playing = true;
         const audio = new AudioContext();

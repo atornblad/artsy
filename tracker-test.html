@@ -17,11 +17,10 @@
     <script>
         const modPlayerButtons = Array.from(document.querySelectorAll('button.mod-player'));
         for(let button of modPlayerButtons) {
-            button.addEventListener('click', (e) => {
-                const modFile = e.target.dataset.modfile;
-                tracker(modFile).then(player => {
-                    console.log(player);
-                    player.play();
+            const modFile = button.dataset.modfile;
+            tracker(modFile).then(player => {
+                button.addEventListener('click', async (e) => {
+                    await player.play();
                 });
             });
         }
