@@ -13,6 +13,7 @@ class TrackerWorklet extends AudioWorkletProcessor {
     onmessage(e) {
         console.log('Tracker Worklet received message:', e.data);
         this.sampleRate = e.data.sampleRate;
+        this.rate = 7093789.2 / (this.sampleRate * 2);
         this.data = e.data.data;
         const songPos = 0;
         const patternIndex = this.data.patternIndices[0];
@@ -47,8 +48,8 @@ class TrackerWorklet extends AudioWorkletProcessor {
             for (let c = 0; c < 4; ++c) {
                 const ch = this.channels[c];
                 if (!ch) continue;
-                value += ch.instr.samples[ch.at | 0] * ch.volume * 0.01;
-                ch.at += 70 / (ch.period + ch.instr.fineTune);
+                value += ch.instr.samples[ch.at | 0] * ch.volume / 200;
+                ch.at += this.rate / (ch.period + ch.instr.fineTune);
                 if (ch.instr.repeat) {
                     if (ch.at >= ch.instr.repeat.start + ch.instr.repeat.length) {
                         ch.at -= ch.instr.repeat.length;
@@ -58,8 +59,7 @@ class TrackerWorklet extends AudioWorkletProcessor {
                     this.channels[i] = null;
                 }
             }
-            channel[i] = value;
-            this.time += 0.05;
+            channel[i] = Math.tanh(value);
         }
         this.debug = false;
         return true;
