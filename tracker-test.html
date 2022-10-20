@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building a MOD tracker in JavaScript</title>
+    <script src="tracker.js"></script>
+    <style>
+        pre { margin: 0; }
+    </style>
+</head>
+<body>
+    <button id="play" class="mod-player" data-modfile="./livin-insanity.mod">Livin' Insanity</button>
+    <button id="play" class="mod-player" data-modfile="./part-2/elekfunk.mod">Elekfunk!</button>
+    <button id="play" class="mod-player" data-modfile="./part-3/mobyle.mod">Mobyle</button>
+    <script>
+        const modPlayerButtons = Array.from(document.querySelectorAll('button.mod-player'));
+        for(let button of modPlayerButtons) {
+            button.addEventListener('click', (e) => {
+                const modFile = e.target.dataset.modfile;
+                tracker(modFile).then(player => {
+                    console.log(player);
+                    player.play();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
