@@ -164,7 +164,7 @@ const tracker = async (url) => {
         await audio.audioWorklet.addModule('./tracker-worklet.js');
         const processor = new AudioWorkletNode(audio, 'tracker-worklet');
         processor.port.onmessage = (e) => {
-            console.log(`Received message from worklet: ${e.data}`);
+            console.log(`Received message from worklet: ${e.data.event}`);
         }
         processor.port.postMessage({
             command: 'play',
