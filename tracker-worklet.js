@@ -15,11 +15,25 @@ class TrackerWorklet extends AudioWorkletProcessor {
         this.sampleRate = e.data.sampleRate;
         this.rate = 7093789.2 / (this.sampleRate * 2);
         this.data = e.data.data;
-        const songPos = 0;
-        const patternIndex = this.data.patternIndices[0];
+        this.nextSongPos = 0;
+        this.nextRowIndex = 0;
+        this.bpm = 125;
+        this.samplesPerRow = (this.sampleRate * 60) / (this.bpm * 4);
+        this.nextRowAfter = 0;
+    }
+
+    nextRow() {
+        this.nextRowAfter += this.samplesPerRow;
+        const patternIndex = this.data.patternIndices[this.nextSongPos];
         const pattern = this.data.patterns[patternIndex];
-        const rowIndex = 0;
-        const row = pattern[rowIndex];
+        const row = pattern[this.nextRowIndex];
+
+        this.nextRowIndex++;
+        if (this.nextRowIndex == 64) {
+            this.nextRowIndex = 0;
+            this.nextSongPos++;
+        }
+
         for (let i = 0; i < 4; ++i) {
             if (row[i].instr) {
                 const instr = this.data.instruments[row[i].instr - 1];
@@ -33,7 +47,7 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 };
             }
             else {
-                this.channels[i] = null;
+                //this.channels[i] = null;
             }
         }
     }
@@ -43,6 +57,10 @@ class TrackerWorklet extends AudioWorkletProcessor {
         const channel = output[0];
 
         for (let i = 0; i < channel.length; ++i) {
+            if (this.nextRowAfter <= 0) {
+                this.nextRow();
+            }
+            this.nextRowAfter--;
             let value = 0.0;
 
             for (let c = 0; c < 4; ++c) {
