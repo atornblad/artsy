@@ -114,6 +114,10 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 this.playing = false;
                 this.port.postMessage({event: 'stopped'});
                 break;
+            case 'resume':
+                this.playing = true;
+                this.port.postMessage({event: 'resumed'});
+                break;
             case 'watch':
                 let { songPos, row, name } = e.data;
                 songPos = songPos || 0;

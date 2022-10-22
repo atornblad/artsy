@@ -18,8 +18,15 @@
     <br />
     <input type="range" min="0" max="127" value="0" id="songposrange" />
     <input type="number" min="0" max="127" value="0" id="songposinput" />
+    <br />
+    <input type="button" value="Stop" id="stop" />
+    <input type="button" value="Resume" id="resume" />
     <script>
-        const spr = document.getElementById('songposrange'), spi = document.getElementById('songposinput');
+        const
+            spr = document.getElementById('songposrange'),
+            spi = document.getElementById('songposinput'),
+            stop = document.getElementById('stop'),
+            resume = document.getElementById('resume');
         let modPlayer = null;
         spr.addEventListener('input', e => {
             spi.value = spr.value;
@@ -28,6 +35,12 @@
         spi.addEventListener('input', e => {
             spr.value = spi.value;
             modPlayer.setSongPosition(spi.value);
+        });
+        stop.addEventListener('click', e => {
+            modPlayer.stop();
+        });
+        resume.addEventListener('click', e => {
+            modPlayer.resume();
         });
         const modPlayerButtons = Array.from(document.querySelectorAll('button.mod-player'));
         for (let button of modPlayerButtons) {

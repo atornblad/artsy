@@ -182,6 +182,10 @@ const tracker = async (url) => {
                         break;
                 }
             }
+            const gain = audio.createGain();
+            gain.gain = 1.5;
+            processor.connect(gain).connect(audio.destination);
+            processorConnected = true;
         }
         processor.port.postMessage({
             command: 'load',
@@ -223,11 +227,7 @@ const tracker = async (url) => {
         if (playing) return;
         if (!loaded) await this.load();
 
-        if (!processorConnected) {
-            const gain = audio.createGain();
-            gain.gain = 1.5;
-            processor.connect(gain).connect(audio.destination);
-            processorConnected = true;
+        if (audio.state !== 'running') {
             audio.resume();
         }
 
@@ -243,6 +243,14 @@ const tracker = async (url) => {
             command: 'stop'
         });
         playing = false;
+    };
+
+    const resume = () => {
+        if (playing) return;
+        processor.port.postMessage({
+            command: 'resume'
+        });
+        playing = true;
     };
 
     const setSongPosition = async (songPos) => {
@@ -262,6 +270,7 @@ const tracker = async (url) => {
         watchRows : watchRows,
         play : play,
         stop : stop,
+        resume : resume,
         setSongPosition : setSongPosition
     }
 };
