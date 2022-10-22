@@ -102,7 +102,6 @@ const tracker = async (url) => {
     }
 
     const songName = getString(data, 0, 20);
-    debug.log(`Loaded a song called "${songName}"`);
 
     let instrumentCount = 0;
     const instruments = [];
@@ -146,6 +145,11 @@ const tracker = async (url) => {
     }
     
     let playing = false;
+    let loaded = false;
+    let audio = null;
+    let processor = null;
+    let processorConnected = false;
+    const callbacks = {};
 
     const workletData = {
         instruments : instruments,
@@ -157,28 +161,70 @@ const tracker = async (url) => {
         patterns: patterns
     };
 
-    const play = async () => {
-        if (playing) return;
-        playing = true;
-        const audio = new AudioContext();
-        await audio.audioWorklet.addModule('./tracker-worklet.js');
-        const processor = new AudioWorkletNode(audio, 'tracker-worklet');
-        processor.port.onmessage = (e) => {
-            console.log(`Received message from worklet: ${e.data.event}`);
+    const load = async () => {
+        if (!audio) {
+            audio = new AudioContext();
+            await audio.audioWorklet.addModule('./tracker-worklet.js');
+            processor = new AudioWorkletNode(audio, 'tracker-worklet');
+            processor.port.onmessage = (e) => {
+                switch (e.data.event) {
+                    case 'watch':
+                        const { name, songPos, row, tick } = e.data;
+                        if (callbacks[name]) {
+                            callbacks[name](songPos, row, tick);
+                        }
+                        break;
+                }
+            }
         }
         processor.port.postMessage({
-            command: 'play',
+            command: 'load',
             sampleRate: audio.sampleRate,
             data: workletData
         });
-        const gain = audio.createGain();
-        gain.gain = 1.5;
-        processor.connect(gain).connect(audio.destination);
+        loaded = true;
+        playing = false;
+    };
+
+    const watch = (name, songPos, row, tick, callback) => {
+        if (!processor) {
+            throw new Error('ModTracker not loaded');
+        }
+        if (!callbacks[name]) {
+            callbacks[name] = callback;
+        }
+        processor.port.postMessage({
+            command: 'watch',
+            name: name,
+            songPos: songPos,
+            row: row,
+            tick: tick
+        });
+    };
+
+    const play = async () => {
+        if (playing) return;
+        if (!loaded) await this.load();
+
+        if (!processorConnected) {
+            const gain = audio.createGain();
+            gain.gain = 1.5;
+            processor.connect(gain).connect(audio.destination);
+            processorConnected = true;
+            audio.resume();
+        }
+
+        processor.port.postMessage({
+            command: 'play'
+        });
+        playing = true;
     };
 
     return {
         ...workletData,
         name : songName,
+        load : load,
+        watch : watch,
         play : play
     }
 };

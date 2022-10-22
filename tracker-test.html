@@ -16,13 +16,22 @@
     <button id="play" class="mod-player" data-modfile="./part-3/mobyle.mod">Mobyle</button>
     <script>
         const modPlayerButtons = Array.from(document.querySelectorAll('button.mod-player'));
-        for(let button of modPlayerButtons) {
+        for (let button of modPlayerButtons) {
             const modFile = button.dataset.modfile;
-            tracker(modFile).then(player => {
+            tracker(modFile).then(player => player.load().then(() => {
+                for (let i = 0; i < 128; ++i) {
+                    player.watch('songpos', i, 0, 0, (songPos, row, tick) => console.log(`Songpos: ${songPos}`));
+                }
+
+                if (modFile === './livin-insanity.mod') {
+                    player.watch('start', 0, 0, 0, () => console.log('Intro started'));
+                    player.watch('recttunnel', 2, 0, 0, () => console.log('Rectangular bitmap tunnel started'));
+                }
+                
                 button.addEventListener('click', async (e) => {
                     await player.play();
-                });
-            });
+                })
+            }));
         }
     </script>
 </body>

@@ -6,11 +6,13 @@ const halfNoteSteps = (halfNotes) => Math.pow(2, halfNotes / 12);
 class TrackerWorklet extends AudioWorkletProcessor {
     constructor(options) {
         super(options);
-        console.log(options);
 
         this.time = 0;
-        this.debug = true;
-        this.startPosted = false;
+        this.playPosted = false;
+        this.watches = [];
+        this.nextWatchIndex = 0;
+        this.nextWatch = null;
+
         this.channels = [ {
             instr: null,
             at: 0,
@@ -64,31 +66,70 @@ class TrackerWorklet extends AudioWorkletProcessor {
     }
 
     onmessage(e) {
-        console.log('Tracker Worklet received message:', e.data);
-        this.sampleRate = e.data.sampleRate;
-        this.rate = 7093789.2 / (this.sampleRate * 2);
-        this.data = e.data.data;
-        this.nextSongPos = 0;
-        this.songLength = this.data.length;
-        this.nextRowIndex = 0;
-        this.bpm = 125;
-        this.samplesPerTick = (this.sampleRate * 60) / (this.bpm * 4) / 6;
-        this.nextTickAfter = 0;
-        this.tick = -1;
-        this.ticksPerRow = 6;
+        const { sampleRate, data, command } = e.data;
+        if (sampleRate) {
+            this.sampleRate = sampleRate;
+            this.rate = 7093789.2 / (this.sampleRate * 2);
+        }
+        if (data) {
+            this.data = data;
+            this.nextSongPos = 0;
+            this.songLength = data.length;
+            this.nextRowIndex = 0;
+            this.bpm = 125;
+            this.samplesPerTick = (this.sampleRate * 60) / (this.bpm * 4) / 6;
+            this.nextTickAfter = 0;
+            this.tick = -1;
+            this.ticksPerRow = 6;
+        }
+        switch (command) {
+            case 'load':
+                // Null command. Just check the sampleRate and data properties.
+                this.playing = false;
+                this.port.postMessage({event: 'loaded'});
+                break;
+            case 'play':
+                this.watches.sort((a, b) => {
+                    if (a.songPos < b.songPos) return -1;
+                    if (a.songPos > b.songPos) return 1;
+                    if (a.row < b.row) return -1;
+                    if (a.row > b.row) return 1;
+                    return a.tick - b.tick;
+                });
+                this.nextWatchIndex = 0;
+                this.nextWatch = this.watches[this.nextWatchIndex];
+                this.playing = true;
+                this.port.postMessage({event: 'playing'});
+                break;
+            case 'watch':
+                let { songPos, row, tick, name } = e.data;
+                songPos = songPos || 0;
+                row = row || 0;
+                tick = tick || 0;
+                name = name || 'default';
+                this.watches.push({ songPos, row, tick, name });
+                break;
+        }
     }
 
     nextTick() {
-        if (!this.startPosted) {
-            this.port.postMessage({
-                event: 'play'
-            });
-            this.startPosted = true;
-        }
         ++this.tick;
         if (this.tick >= this.ticksPerRow) {
             this.tick = 0;
         }
+
+        while (this.nextWatch && this.nextWatch.songPos == this.nextSongPos && this.nextWatch.row == this.nextRowIndex && this.nextWatch.tick == this.tick) {
+            this.port.postMessage({
+                event: 'watch',
+                name: this.nextWatch.name,
+                songPos : this.nextSongPos,
+                row : this.nextRowIndex,
+                tick : this.tick
+            });
+            ++this.nextWatchIndex;
+            this.nextWatch = this.watches[this.nextWatchIndex];
+        }
+
         if (this.tick == 0) {
             if (!this.nextRow()) return false;
         }
@@ -289,6 +330,11 @@ class TrackerWorklet extends AudioWorkletProcessor {
         const output = outputs[0];
         const channel = output[0];
 
+        if (!this.playing) {
+            for (let i = 0; i < channel.length; ++i) channel[i] = 0.0;
+            return true;
+        }
+
         for (let i = 0; i < channel.length; ++i) {
             if (this.nextTickAfter <= 0) {
                 if (!this.nextTick()) {
@@ -323,7 +369,6 @@ class TrackerWorklet extends AudioWorkletProcessor {
             }
             channel[i] = Math.tanh(value);
         }
-        this.debug = false;
         this.time += 1 / this.sampleRate;
         return true;
     }
