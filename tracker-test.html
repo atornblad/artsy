@@ -14,16 +14,32 @@
     <button id="play" class="mod-player" data-modfile="./livin-insanity.mod">Livin' Insanity</button>
     <button id="play" class="mod-player" data-modfile="./part-2/elekfunk.mod">Elekfunk!</button>
     <button id="play" class="mod-player" data-modfile="./part-3/mobyle.mod">Mobyle</button>
+    <button id="play" class="mod-player" data-modfile="./musiklinjen.mod">Musiklinjen</button>
+    <br />
+    <input type="range" min="0" max="127" value="0" id="songposrange" />
+    <input type="number" min="0" max="127" value="0" id="songposinput" />
     <script>
+        const spr = document.getElementById('songposrange'), spi = document.getElementById('songposinput');
+        let modPlayer = null;
+        spr.addEventListener('input', e => {
+            spi.value = spr.value;
+            modPlayer.setSongPosition(spr.value);
+        });
+        spi.addEventListener('input', e => {
+            spr.value = spi.value;
+            modPlayer.setSongPosition(spi.value);
+        });
         const modPlayerButtons = Array.from(document.querySelectorAll('button.mod-player'));
         for (let button of modPlayerButtons) {
             const modFile = button.dataset.modfile;
             tracker(modFile).then(player => player.load().then(() => {
-                for (let i = 0; i < 128; ++i) {
-                    for (let j = 0; j < 64; j += 4) {
-                        player.watch('songpos', i, j, (songPos, row, tick) => console.log(`Songpos: ${songPos} Bar: ${row / 4}`));
+                player.watchRows((songPos, row) => {
+                    spr.value = songPos;
+                    spi.value = songPos;
+                    if ((row % 4) === 0) {
+                        console.log(`Song position: ${songPos}, bar: ${row / 4}`);
                     }
-                }
+                });
 
                 if (modFile === './livin-insanity.mod') {
                     player.watch('start', 0, 0, () => console.log('Intro started'));
@@ -31,6 +47,12 @@
                 }
 
                 button.addEventListener('click', async (e) => {
+                    if (modPlayer) {
+                        modPlayer.stop();
+                    }
+                    spr.max = player.songLength - 1;
+                    spi.max = player.songLength - 1;
+                    modPlayer = player;
                     await player.play();
                 })
             }));

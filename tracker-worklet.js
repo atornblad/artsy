@@ -17,6 +17,7 @@ class TrackerWorklet extends AudioWorkletProcessor {
         this.time = 0;
         this.playPosted = false;
         this.watches = [];
+        this.watchRows = false;
         this.nextWatchIndex = 0;
         this.nextWatch = null;
 
@@ -97,10 +98,21 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 break;
             case 'play':
                 this.watches.sort(watchComparer);
+                this.nextSongPos = 0;
+                this.nextRowIndex = 0;
+                this.bpm = 125;
+                this.samplesPerTick = (this.sampleRate * 60) / (this.bpm * 4) / 6;
+                this.nextTickAfter = 0;
+                this.tick = -1;
+                this.ticksPerRow = 6;
                 this.nextWatchIndex = 0;
                 this.nextWatch = this.watches[this.nextWatchIndex];
                 this.playing = true;
                 this.port.postMessage({event: 'playing'});
+                break;
+            case 'stop':
+                this.playing = false;
+                this.port.postMessage({event: 'stopped'});
                 break;
             case 'watch':
                 let { songPos, row, name } = e.data;
@@ -109,6 +121,13 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 name = name || 'default';
                 this.watches.push({ songPos, row, name });
                 break;
+            case 'watchRows':
+                this.watchRows = true;
+                break;
+            case 'setpos':
+                this.nextSongPos = e.data.songPos;
+                this.nextRowIndex = 0;
+                this.tick = -1;
         }
     }
 
@@ -176,6 +195,15 @@ class TrackerWorklet extends AudioWorkletProcessor {
 
         const now = { songPos: this.nextSongPos, row: this.nextRowIndex };
 
+        if (this.watchRows) {
+            this.port.postMessage({
+                event: 'watch',
+                name: '$row',
+                songPos : this.nextSongPos,
+                row : this.nextRowIndex
+            });
+        }
+
         while (this.nextWatch && watchComparer(this.nextWatch, now) < 0) {
             ++this.nextWatchIndex;
             this.nextWatch = this.watches[this.nextWatchIndex];
@@ -234,6 +262,9 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 }
                 else {
                     ch.period = period;
+                    if (command != 0x5) {
+                        ch.at = 0;
+                    }
                 }
             }
 
@@ -262,7 +293,10 @@ class TrackerWorklet extends AudioWorkletProcessor {
                         break;
                     case 0x3:
                         // 3: Slide to note
-                        // Handled above!
+                        // Parts are handled above!
+                        if (!period) {
+                            ch.noteSlide.active = true;
+                        }
                         break;
                     case 0x4:
                         // 4: Vibrato
@@ -318,7 +352,13 @@ class TrackerWorklet extends AudioWorkletProcessor {
                         break;
                     case 0xf:
                         // F: Set speed
-                        this.ticksPerRow = data;
+                        if (data <= 31) {
+                            this.ticksPerRow = data;
+                        }
+                        else {
+                            this.bpm = data;
+                            this.samplesPerTick = (this.sampleRate * 60) / (this.bpm * 4) / 6;
+                        }
                         break;
                     default:
                         const key = command.toString(16);

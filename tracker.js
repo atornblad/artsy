@@ -150,6 +150,7 @@ const tracker = async (url) => {
     let processor = null;
     let processorConnected = false;
     const callbacks = {};
+    const watchRowsCallbacks = [];
 
     const workletData = {
         instruments : instruments,
@@ -170,7 +171,12 @@ const tracker = async (url) => {
                 switch (e.data.event) {
                     case 'watch':
                         const { name, songPos, row, tick } = e.data;
-                        if (callbacks[name]) {
+                        if (name === '$row') {
+                            for (let callback of watchRowsCallbacks) {
+                                callback(songPos, row, tick);
+                            }
+                        }
+                        else if (callbacks[name]) {
                             callbacks[name](songPos, row, tick);
                         }
                         break;
@@ -201,6 +207,18 @@ const tracker = async (url) => {
         });
     };
 
+    const watchRows = (callback) => {
+        if (!processor) {
+            throw new Error('ModTracker not loaded');
+        }
+        if (watchRowsCallbacks.length === 0) {
+            processor.port.postMessage({
+                command: 'watchRows'
+            })
+        }
+        watchRowsCallbacks.push(callback);
+    }
+
     const play = async () => {
         if (playing) return;
         if (!loaded) await this.load();
@@ -219,11 +237,31 @@ const tracker = async (url) => {
         playing = true;
     };
 
+    const stop = () => {
+        if (!playing) return;
+        processor.port.postMessage({
+            command: 'stop'
+        });
+        playing = false;
+    };
+
+    const setSongPosition = async (songPos) => {
+        if (!playing) return;
+        processor.port.postMessage({
+            command: 'setpos',
+            songPos: songPos
+        });
+    };
+
     return {
         ...workletData,
         name : songName,
+        songLength : songLength,
         load : load,
         watch : watch,
-        play : play
+        watchRows : watchRows,
+        play : play,
+        stop : stop,
+        setSongPosition : setSongPosition
     }
 };
