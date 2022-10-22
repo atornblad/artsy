@@ -186,7 +186,7 @@ const tracker = async (url) => {
         playing = false;
     };
 
-    const watch = (name, songPos, row, tick, callback) => {
+    const watch = (name, songPos, row, callback) => {
         if (!processor) {
             throw new Error('ModTracker not loaded');
         }
@@ -197,8 +197,7 @@ const tracker = async (url) => {
             command: 'watch',
             name: name,
             songPos: songPos,
-            row: row,
-            tick: tick
+            row: row
         });
     };
 

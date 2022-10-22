@@ -20,14 +20,16 @@
             const modFile = button.dataset.modfile;
             tracker(modFile).then(player => player.load().then(() => {
                 for (let i = 0; i < 128; ++i) {
-                    player.watch('songpos', i, 0, 0, (songPos, row, tick) => console.log(`Songpos: ${songPos}`));
+                    for (let j = 0; j < 64; j += 4) {
+                        player.watch('songpos', i, j, (songPos, row, tick) => console.log(`Songpos: ${songPos} Bar: ${row / 4}`));
+                    }
                 }
 
                 if (modFile === './livin-insanity.mod') {
-                    player.watch('start', 0, 0, 0, () => console.log('Intro started'));
-                    player.watch('recttunnel', 2, 0, 0, () => console.log('Rectangular bitmap tunnel started'));
+                    player.watch('start', 0, 0, () => console.log('Intro started'));
+                    player.watch('recttunnel', 2, 0, () => console.log('Rectangular bitmap tunnel started'));
                 }
-                
+
                 button.addEventListener('click', async (e) => {
                     await player.play();
                 })

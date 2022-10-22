@@ -2,6 +2,13 @@ const debuggedEffects = {};
 
 const HALF_NOTE_STEP = Math.pow(2, 1 / 12);
 const halfNoteSteps = (halfNotes) => Math.pow(2, halfNotes / 12);
+const watchComparer = (a, b) => {
+    if (a.songPos < b.songPos) return -1;
+    if (a.songPos > b.songPos) return 1;
+    if (a.row < b.row) return -1;
+    if (a.row > b.row) return 1;
+    return 0;
+};
 
 class TrackerWorklet extends AudioWorkletProcessor {
     constructor(options) {
@@ -89,25 +96,18 @@ class TrackerWorklet extends AudioWorkletProcessor {
                 this.port.postMessage({event: 'loaded'});
                 break;
             case 'play':
-                this.watches.sort((a, b) => {
-                    if (a.songPos < b.songPos) return -1;
-                    if (a.songPos > b.songPos) return 1;
-                    if (a.row < b.row) return -1;
-                    if (a.row > b.row) return 1;
-                    return a.tick - b.tick;
-                });
+                this.watches.sort(watchComparer);
                 this.nextWatchIndex = 0;
                 this.nextWatch = this.watches[this.nextWatchIndex];
                 this.playing = true;
                 this.port.postMessage({event: 'playing'});
                 break;
             case 'watch':
-                let { songPos, row, tick, name } = e.data;
+                let { songPos, row, name } = e.data;
                 songPos = songPos || 0;
                 row = row || 0;
-                tick = tick || 0;
                 name = name || 'default';
-                this.watches.push({ songPos, row, tick, name });
+                this.watches.push({ songPos, row, name });
                 break;
         }
     }
@@ -116,18 +116,6 @@ class TrackerWorklet extends AudioWorkletProcessor {
         ++this.tick;
         if (this.tick >= this.ticksPerRow) {
             this.tick = 0;
-        }
-
-        while (this.nextWatch && this.nextWatch.songPos == this.nextSongPos && this.nextWatch.row == this.nextRowIndex && this.nextWatch.tick == this.tick) {
-            this.port.postMessage({
-                event: 'watch',
-                name: this.nextWatch.name,
-                songPos : this.nextSongPos,
-                row : this.nextRowIndex,
-                tick : this.tick
-            });
-            ++this.nextWatchIndex;
-            this.nextWatch = this.watches[this.nextWatchIndex];
         }
 
         if (this.tick == 0) {
@@ -185,6 +173,24 @@ class TrackerWorklet extends AudioWorkletProcessor {
         const patternIndex = this.data.patternIndices[this.nextSongPos];
         const pattern = this.data.patterns[patternIndex];
         const row = pattern[this.nextRowIndex];
+
+        const now = { songPos: this.nextSongPos, row: this.nextRowIndex };
+
+        while (this.nextWatch && watchComparer(this.nextWatch, now) < 0) {
+            ++this.nextWatchIndex;
+            this.nextWatch = this.watches[this.nextWatchIndex];
+        }
+
+        while (this.nextWatch && watchComparer(this.nextWatch, now) === 0) {
+            this.port.postMessage({
+                event: 'watch',
+                name: this.nextWatch.name,
+                songPos : this.nextSongPos,
+                row : this.nextRowIndex
+            });
+            ++this.nextWatchIndex;
+            this.nextWatch = this.watches[this.nextWatchIndex];
+        }
 
         this.nextRowIndex++;
         if (this.nextRowIndex == 64) {
