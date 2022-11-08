@@ -4,15 +4,15 @@ import { IntroTextScene } from './intro-text-scene.js';
 import { BitmapTunnelScene } from './bitmap-tunnel-scene.js';
 import { PictureScene } from './picture-scene.js';
 
-const audio = new AudioContext();
-const player = new ModPlayer(audio);
-await player.load('./livin-insanity.mod');
-
 const artsyPart1 = new JsDemo({
     width: 640,
     height: 512,
     target: '#wrapper'
 });
+
+const audio = new AudioContext();
+const player = new ModPlayer(audio);
+await player.load('./livin-insanity.mod');
 
 const intro = new IntroTextScene();
 const bitmapTunnel = new BitmapTunnelScene();
