@@ -68,9 +68,9 @@ export class BitmapTunnelScene extends Scene {
         
         // Floor equation: y = a*z+b, where b = yFloor, a = slope
         
-        const millisUntilEnd = 30725 - time;
+        const millisUntilEnd = 30720 - time;
         if (millisUntilEnd < 0.0) return;
-        const millisUntilMid = 15480 - time;
+        const millisUntilMid = 15360 - time;
         
         const millisUntilWall = millisUntilMid > 0 ? millisUntilMid : millisUntilEnd;
         

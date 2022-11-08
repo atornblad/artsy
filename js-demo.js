@@ -115,34 +115,29 @@ export class JsDemo {
 
     start() {
         //await this.soundPlayer.play();
-        this.modPlayer.watchRows((p,r) => console.log(`Pos ${p} Row ${r}`));
+        //this.modPlayer.watchRows((p,r) => console.log(`Pos ${p} Row ${r}`));
         this.canvas.addEventListener('click', () => this.modPlayer.play());
+        
+        const skipKeys = '123456789abcdefghijklmnopqrstuvwxyz';
+
         window.addEventListener('keydown', (e) => {
             switch (e.key) {
                 case ' ':
-                case 'p':
                     this.modPlayer.play();
                     break;
-                case '1':
-                    if (this.scene !== this.loadingScene) {
-                        this.modPlayer.setRow(0, 0);
-                    };
-                    break;
-                case '2':
-                    if (this.scene !== this.loadingScene) {
-                        this.modPlayer.setRow(2, 0);
-                    };
-                    break;
-                case '3':
-                    if (this.scene !== this.loadingScene) {
-                        this.modPlayer.setRow(6, 0);
-                    };
+                case 'Escape':
+                    this.modPlayer.stop();
                     break;
                 default:
-                    console.log(e.key);
-            }
-            if (e.key === ' ') {
-                this.modPlayer.play();
+                    const index = skipKeys.indexOf(e.key);
+                    if (index >= 0 && index < this.scenes.length) {
+                        this.modPlayer.play();
+                        this.modPlayer.setRow(this.scenes[index].from.songPos, this.scenes[index].from.row);
+                    }
+                    else {
+                        console.log(e.key);
+                    }
+                    break;
             }
         });
     }
