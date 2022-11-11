@@ -1,8 +1,6 @@
 
 import { solidColor, Scene } from './js-demo.js';
 
-let whaaaaat = null;
-
 export class IntroTextScene extends Scene {
     
     constructor() {
@@ -32,7 +30,6 @@ export class IntroTextScene extends Scene {
 
         timeSource.watch(1, 0);
 
-        whaaaaat = await this.loadImage('./whaaaaat.png');
         progressCallback(1, 1);
     }
 
@@ -53,9 +50,6 @@ export class IntroTextScene extends Scene {
         }
         else if (this.pos < 64) {
             this.drawSecondPage(context, canvas.width, canvas.height);
-        }
-        else {
-            this.drawWhaaaaat(context, canvas.width, canvas.height);
         }
     }
 
@@ -128,15 +122,5 @@ export class IntroTextScene extends Scene {
             context.font = "bold 120px sans-serif";
             context.fillText("tricycle", -width, 360);
         }
-    }
-
-    drawWhaaaaat(context, width, height) {
-        const halfWidth = width >> 1;
-        const halfHeight = height >> 1;
-        const chapterComplete = (this.lastTime - this.timeOfLastMessage) / 900;
-        context.globalAlpha = chapterComplete > 0.25 ? (4/3 - chapterComplete / 3 * 4) :
-                                      chapterComplete < 0.1 ? (chapterComplete * 10) :
-                                      1;
-        context.drawImage(whaaaaat, halfWidth - (whaaaaat.width >> 1), halfHeight - (whaaaaat.height >> 1));
     }
 };

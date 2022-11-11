@@ -25,7 +25,6 @@ export class PictureScene extends Scene {
     }
 
     handleTime(songPos, row) {
-        console.log(this.name + ' got a handleTime call');
         this.fadingOut = true;
         this.fadeOutStartTime = this.lastTime;
     }

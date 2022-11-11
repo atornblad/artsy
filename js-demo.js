@@ -32,6 +32,25 @@ const getElement = (elementOrSelector) => {
     return elementOrSelector;
 };
 
+export const solidColor = (r, g, b) => `rgba(${r | 0}, ${g | 0}, ${b | 0}, 1)`;
+
+export const smooth = (complete) => (1 - Math.cos(complete * Math.PI)) / 2
+
+export const range = function* (start, end, step = 1) {
+    for (let i = start; i < end; i += step) {
+        yield i;
+    }
+};
+
+const genProto = Object.getPrototypeOf(range(0, 10));
+if (!genProto.map) {
+    genProto.map = function* (f) {
+        for (const x of this) {
+            yield f(x);
+        }
+    };
+}
+
 export class JsDemo {
     constructor(options) {
         const {
@@ -39,7 +58,8 @@ export class JsDemo {
             width : providedWidth,
             height : providedHeight,
             backgroundColor : providedBackgroundColor,
-            target : providedTarget
+            target : providedTarget,
+            devMode : providedDevMode
         } = options;
     
         const width = providedWidth || 640;
@@ -49,12 +69,19 @@ export class JsDemo {
         const canvas = providedCanvas ?
                        prepareCanvas(providedCanvas, width, height, backgroundColor) :
                        createCanvas(target, width, height, backgroundColor);
+        const devMode = providedDevMode === undefined ?
+                        (document.location.hostname == '127.0.0.1' || document.location.hostname == 'localhost') :
+                        providedDevMode;
     
         const context = canvas.getContext('2d');
 
         this.canvas = canvas;
         this.context = context;
         this.animTime = 0.0;
+        this.devMode = devMode;
+        this.performance = [...range(0, 60).map(i => 0.0)];
+        this.currentPerf = 0.0;
+        this.performanceIndex = 0;
 
         this.scene = this.loadingScene = new LoadingScene();
 
@@ -63,6 +90,9 @@ export class JsDemo {
 
     async registerScenes(modPlayer, ...scenes) {
         this.modPlayer = modPlayer;
+        if (this.devMode) {
+            modPlayer.watchRows(this.handleTime.bind(this));
+        }
 
         this.scene = this.loadingScene;
         this.scenes = Array.from(scenes.values());
@@ -85,6 +115,7 @@ export class JsDemo {
 
         const loaders = scenes.map((s, i) => {
             const scene = s.scene;
+            scene.index = i;
             const timeSource = {
                 watch: (songPos, row) => modPlayer.watch(songPos, row, (p, r) => scene.handleTime(p, r))
             };
@@ -100,7 +131,13 @@ export class JsDemo {
         this.scene = this.scenes[index].scene;
     }
 
+    handleTime(pos, row) {
+        this.modPlayerPos = pos;
+        this.modPlayerRow = row;
+    }
+
     animFrame(time) {
+        const start = performance.now();
         this.animTime = time;
         if (!this.sceneStartTime) this.sceneStartTime = time;
         this.context.save();
@@ -110,13 +147,37 @@ export class JsDemo {
         }
         this.context.restore();
         this.context.globalAlpha = 1.0;
+
+        if (this.devMode) {
+            const end = performance.now();
+            this.context.fillStyle = 'white';
+            this.context.font = '12px monospace';
+            this.context.fillText(`FPS: ${Math.round(1000 / (time - this.lastTime))}`, 10, 20);
+            const shownTime = this.modStarted ? (time - this.modStarted) : 0;
+            this.context.fillText(`Time: ${Math.round(shownTime)}`, 10, 40);
+            this.context.fillText(`Scene: ${this.scene.constructor.name} (index ${this.scene.index})`, 10, 60);
+            this.context.fillText(`Song: ${this.modPlayer?.mod?.name}`, 10, 80);
+            this.context.fillText(`Pos: ${this.modPlayerPos}`, 10, 100);
+            this.context.fillText(`Row: ${this.modPlayerRow}`, 10, 120);
+            const render = end - start;
+            this.context.fillText(`Render: ${render.toFixed(1)} ms`, 10, 140);
+            this.currentPerf -= this.performance[this.performanceIndex];
+            this.currentPerf += render;
+            this.performance[this.performanceIndex] = render;
+            this.performanceIndex = (this.performanceIndex + 1) % this.performance.length;
+            this.context.fillText(`Avg: ${(this.currentPerf / this.performance.length).toFixed(1)} ms`, 10, 160);
+            this.context.fillText(`CPU: ${(this.currentPerf * 6 / this.performance.length).toFixed(1)} %`, 10, 180);
+            this.lastTime = time;
+        }
+
         window.requestAnimationFrame(this.animFrame.bind(this));
     }
 
     start() {
-        //await this.soundPlayer.play();
-        //this.modPlayer.watchRows((p,r) => console.log(`Pos ${p} Row ${r}`));
-        this.canvas.addEventListener('click', () => this.modPlayer.play());
+        this.canvas.addEventListener('click', () => {
+            this.modPlayer.play();
+            this.modStarted = this.lastTime;
+        });
         
         const skipKeys = '123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -124,6 +185,7 @@ export class JsDemo {
             switch (e.key) {
                 case ' ':
                     this.modPlayer.play();
+                    this.modStarted = this.lastTime;
                     break;
                 case 'Escape':
                     this.modPlayer.stop();
@@ -135,31 +197,12 @@ export class JsDemo {
                         this.modPlayer.setRow(this.scenes[index].from.songPos, this.scenes[index].from.row);
                     }
                     else {
-                        console.log(e.key);
+                        console.log(`Unhandled key: ${e.key}`);
                     }
                     break;
             }
         });
     }
-}
-
-export const solidColor = (r, g, b) => `rgba(${r | 0}, ${g | 0}, ${b | 0}, 1)`;
-
-export const smooth = (complete) => (1 - Math.cos(complete * Math.PI)) / 2
-
-export const range = function* (start, end, step = 1) {
-    for (let i = start; i < end; i += step) {
-        yield i;
-    }
-};
-
-const genProto = Object.getPrototypeOf(range(0, 10));
-if (!genProto.map) {
-    genProto.map = function* (f) {
-        for (const x of this) {
-            yield f(x);
-        }
-    };
 }
 
 export const sinus = [...range(0, 65536).map(i => Math.sin(i / 65536 * 2 * Math.PI))];

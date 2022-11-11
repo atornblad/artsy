@@ -3,11 +3,13 @@ import { JsDemo, EmptyScene } from './js-demo.js';
 import { IntroTextScene } from './intro-text-scene.js';
 import { BitmapTunnelScene } from './bitmap-tunnel-scene.js';
 import { PictureScene } from './picture-scene.js';
+import { DeadChickenScene } from './dead-chicken-scene.js';
 
 const artsyPart1 = new JsDemo({
     width: 640,
     height: 512,
-    target: '#wrapper'
+    target: '#wrapper',
+    devMode: document.location.search.indexOf('dev') >= 0
 });
 
 const audio = new AudioContext();
@@ -15,27 +17,36 @@ const player = new ModPlayer(audio);
 await player.load('./livin-insanity.mod');
 
 const intro = new IntroTextScene();
+const whaaaaat = new PictureScene('./whaaaaat.png', 1, "#000", 200, "#000", 1, 2, 480);
 const bitmapTunnel = new BitmapTunnelScene();
 const sanity1Logo = new PictureScene('./sanity1.png', 2, "#fff", 500, "#000", 6, 28, 480);
-const madmanLogo = new PictureScene('./madman.png', 2, "#000", 500, "#240000", 6, 60, 480);
-const blank = new EmptyScene('#240000');
+const madmanLogo = new PictureScene('./madman.png', 2, "#000", 500, "#441010", 6, 60, 480);
+const deadChicken = new DeadChickenScene();
+const blank = new EmptyScene('#441010');
 
-await artsyPart1.registerScenes(player, {
-    from: {songPos: 0, row: 0},
-    scene: intro
-}, {
-    from: {songPos: 2, row: 0},
-    scene: bitmapTunnel
-}, {
-    from: {songPos: 6, row: 0},
-    scene: sanity1Logo
-}, {
-    from: {songPos: 6, row: 32},
-    scene: madmanLogo
-}, {
-    from: {songPos: 7, row: 0},
-    scene: blank
-}
+await artsyPart1.registerScenes(player,
+    {
+        from: {songPos: 0, row: 0},
+        scene: intro
+    }, {
+        from: {songPos: 1, row: 0},
+        scene: whaaaaat
+    }, {
+        from: {songPos: 2, row: 0},
+        scene: bitmapTunnel
+    }, {
+        from: {songPos: 6, row: 0},
+        scene: sanity1Logo
+    }, {
+        from: {songPos: 6, row: 32},
+        scene: madmanLogo
+    }, {
+        from: {songPos: 7, row: 0},
+        scene: deadChicken
+    }, {
+        from: {songPos: 9, row: 0},
+        scene: blank
+    }
 );
 
 artsyPart1.start();
