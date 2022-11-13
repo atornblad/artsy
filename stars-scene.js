@@ -15,6 +15,7 @@ export class StarsScene extends Scene {
         super();
         this.name = 'Stars';
         this.phaseXStarted = false;
+        this.showText = false;
     }
 
     async prepare(timeSource, progressCallback) {
@@ -120,18 +121,23 @@ export class StarsScene extends Scene {
         }
         if (pos === 16 && row === 0) {
             this.phaseXStarted = this.lastTime - this.starsStart;
-            console.log("phaseXStarted", this.phaseXStarted);
         }
-        if (pos === 17 && row === 60) {
-            this.fadeOutStarted = this.lastTime - this.starsStart;
+        if (pos === 17 && row === 56) {
+            this.fadeOutStarted = this.lastTime;
+        }
+        const beat = (pos - 16) * 64 + row;
+        if (beat >= 0 && beat < 95) {
+            this.showText = (beat % 4) <= 1;
+            this.textIndex = Math.floor(beat / 32);
+        }
+        else {
+            this.showText = false;
         }
     }
 
     render(canvas, context, time) {
         context.fillStyle = "#000000";
         context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        let coords, phaseX, phaseY, phaseZ, offsetZ, maxStars;
 
         if (this.pos === 13) {
             this.useHtmlLogoCoords(time);
@@ -145,6 +151,11 @@ export class StarsScene extends Scene {
         }
 
         context.fillStyle = "#ffffff";
+
+        let fade = 1.0;
+        if (this.fadeOutStarted) {
+            fade = Math.max(0.0, (960 - (time - this.fadeOutStarted)) / 960); // ???
+        }
         
         for (let i = 0; i < this.maxStars; ++i) {
             const star = this.coords[i];
@@ -163,17 +174,54 @@ export class StarsScene extends Scene {
                 if (screenX >= 0 && screenX < canvas.width && screenY >= 0 && screenY < canvas.height) {
                     let alpha = (512 - z) / 1024;
                     if (alpha < 0) alpha = 0; else if (alpha > 1) alpha = 1;
-                    if (this.fadeOutStarted) {
-                        const fade = Math.max(0.0, (960 - (time - this.fadeOutStarted)) / 960); // ???
-                        alpha *= fade;
-                    }
+                    alpha *= fade;
                     context.globalAlpha = alpha; // TODO:  * fade;
                     context.fillRect(screenX, screenY, 2, 2);
                 }
             }
         }
 
+        this.renderText(context);
+
         this.lastTime = time;
+    }
+
+    renderText(context) {
+        if (this.showText) {
+            context.globalAlpha = 1;
+            context.textAlign = "left";
+            context.textBaseline = "top";
+
+            switch (this.textIndex) {
+                case 0:
+                    context.fillStyle = "#999999";
+                    context.font = "40px sans-serif";
+                    context.fillText("Anders Marzi Tornblad", 10, 10);
+                    context.fillStyle = "#666666";
+                    context.font = "30px sans-serif";
+                    context.fillText("JavaScript, 2013", 10, 55);
+                    context.fillStyle = "#666666";
+                    context.font = "20px sans-serif";
+                    context.fillText("Revisited in 2022", 10, 90);
+                    break;
+                case 1:
+                    context.fillStyle = "#999999";
+                    context.font = "40px sans-serif";
+                    context.fillText("Olivi\u00e9r Bechard (RA)", 10, 10);
+                    context.fillStyle = "#666666";
+                    context.font = "30px sans-serif";
+                    context.fillText("Graphics, 1993", 10, 55);
+                    break;
+                case 2:
+                    context.fillStyle = "#999999";
+                    context.font = "40px sans-serif";
+                    context.fillText("Fr\u00e9d\u00e9ric Motte (Moby)", 10, 10);
+                    context.fillStyle = "#666666";
+                    context.font = "30px sans-serif";
+                    context.fillText("Music, 1993", 10, 55);
+                    break;
+            }
+        }
     }
 
     useHtmlLogoCoords(time) {
