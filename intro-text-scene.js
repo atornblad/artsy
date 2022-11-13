@@ -5,7 +5,7 @@ export class IntroTextScene extends Scene {
     
     constructor() {
         super();
-        this.name = 'Intro Text Scene';
+        this.name = 'Intro Text';
         this.pos = -1;
         this.lastTime = 0;
     }

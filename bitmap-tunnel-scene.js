@@ -21,7 +21,7 @@ export class BitmapTunnelScene extends Scene {
     
     constructor() {
         super();
-        this.name = 'Bitmap Tunnel Text Scene';
+        this.name = 'Bitmap Tunnel';
         this.pos = -1;
     }
 

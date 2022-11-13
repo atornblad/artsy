@@ -4,6 +4,8 @@ import { IntroTextScene } from './intro-text-scene.js';
 import { BitmapTunnelScene } from './bitmap-tunnel-scene.js';
 import { PictureScene } from './picture-scene.js';
 import { DeadChickenScene } from './dead-chicken-scene.js';
+import { GlobeScene } from './globe-scene.js';
+import { StarsScene } from './stars-scene.js';
 
 const artsyPart1 = new JsDemo({
     width: 640,
@@ -22,6 +24,10 @@ const bitmapTunnel = new BitmapTunnelScene();
 const sanity1Logo = new PictureScene('./sanity1.png', 2, "#fff", 500, "#000", 6, 28, 480);
 const madmanLogo = new PictureScene('./madman.png', 2, "#000", 500, "#441010", 6, 60, 480);
 const deadChicken = new DeadChickenScene();
+const globe = new GlobeScene();
+const einstein = new PictureScene('./einstein.png', 2, "#fff", 500, "#000", 12, 60, 480);
+const sanity2Logo = new PictureScene('./sanity2.png', 2, "#000", 500, "#000", 13, 28, 480);
+const stars = new StarsScene();
 const blank = new EmptyScene('#441010');
 
 await artsyPart1.registerScenes(player,
@@ -45,6 +51,18 @@ await artsyPart1.registerScenes(player,
         scene: deadChicken
     }, {
         from: {songPos: 9, row: 0},
+        scene: globe
+    }, {
+        from: {songPos: 12, row: 0},
+        scene: einstein
+    }, {
+        from: {songPos: 13, row: 0},
+        scene: sanity2Logo
+    }, {
+        from: {songPos: 13, row: 32},
+        scene: stars
+    }, {
+        from: { songPos: 18, row: 0},
         scene: blank
     }
 );

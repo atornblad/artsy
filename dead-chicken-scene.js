@@ -3,7 +3,7 @@ import { sinus, smooth, Scene } from './js-demo.js';
 export class DeadChickenScene extends Scene {
     constructor() {
         super();
-        this.name = 'Dead Chicken Scene';
+        this.name = 'Dead Chicken';
         this.part = -1;
     }
 
@@ -59,7 +59,6 @@ export class DeadChickenScene extends Scene {
         this.fading = true;
         this.fadeStartTime = this.lastTime;
         this.fadeTime = fadeTime;
-        console.log('fading out');
     }
 
     render(canvas, context, time) {

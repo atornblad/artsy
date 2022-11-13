@@ -3,7 +3,7 @@ import { Scene } from './js-demo.js';
 export class PictureScene extends Scene {
     constructor(url, scale, fromColor, fadeInTime, toColor, fadeOutPos, fadeOutRow, fadeOutTime) {
         super();
-        this.name = `Picture Scene: ${url}`;
+        this.name = `Picture: ${url}`;
         this.url = url;
         this.scale = scale;
         this.fromColor = fromColor;
