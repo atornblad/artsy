@@ -3,7 +3,8 @@ import { Scene } from './js-demo.js';
 export class PictureScene extends Scene {
     constructor(url, scale, fromColor, fadeInTime, toColor, fadeOutPos, fadeOutRow, fadeOutTime) {
         super();
-        this.name = `Picture: ${url}`;
+        const pictureName = url.match(/^(.*\/)?(.*?)(\.(png|jpg|jpeg))?$/)[2];
+        this.name = `Picture (${pictureName})`;
         this.url = url;
         this.scale = scale;
         this.fromColor = fromColor;
@@ -30,7 +31,6 @@ export class PictureScene extends Scene {
     }
 
     render(canvas, context, time) {
-        this.lastTime = time;
         const halfWidth = canvas.width / 2;
         const halfHeight = canvas.height / 2;
 
@@ -56,5 +56,7 @@ export class PictureScene extends Scene {
             context.fillRect(0, 0, canvas.width, canvas.height);
         }
         context.globalAlpha = 1.0;
+
+        this.lastTime = time;
     }
 }
