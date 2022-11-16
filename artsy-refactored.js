@@ -1,5 +1,5 @@
 import { ModPlayer } from 'https://atornblad.se/files/js-mod-player/player.js';
-import { JsDemo, EmptyScene } from './js-demo.js';
+import { JsDemo } from './js-demo.js';
 import { IntroTextScene } from './intro-text-scene.js';
 import { BitmapTunnelScene } from './bitmap-tunnel-scene.js';
 import { PictureScene } from './picture-scene.js';
@@ -8,6 +8,7 @@ import { GlobeScene } from './globe-scene.js';
 import { StarsScene } from './stars-scene.js';
 import { DiscTunnelScene } from './disc-tunnel-scene.js';
 import { DemonWarpScene } from './demon-warp-scene.js';
+import { EndScene } from './end-scene.js';
 
 const artsyPart1 = new JsDemo({
     width: 640,
@@ -32,7 +33,7 @@ const sanity2Logo = new PictureScene('./sanity2.png', 2, "#000", 500, "#000", 13
 const stars = new StarsScene();
 const discTunnel = new DiscTunnelScene();
 const demonWarp = new DemonWarpScene();
-const blank = new EmptyScene('#441010');
+const end = new EndScene();
 
 await artsyPart1.registerScenes(player,
     {
@@ -73,7 +74,7 @@ await artsyPart1.registerScenes(player,
         scene: demonWarp
     }, {
         from: { songPos: 25, row: 0},
-        scene: blank
+        scene: end
     }
 );
 
