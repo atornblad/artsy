@@ -202,7 +202,7 @@ export class StarsScene extends Scene {
                     context.fillText("JavaScript, 2013", 10, 55);
                     context.fillStyle = "#666666";
                     context.font = "20px sans-serif";
-                    context.fillText("Revisited in 2022", 10, 90);
+                    context.fillText("Refactored, 2022–2023", 10, 90);
                     break;
                 case 1:
                     context.fillStyle = "#999999";

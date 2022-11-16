@@ -7,6 +7,7 @@ import { DeadChickenScene } from './dead-chicken-scene.js';
 import { GlobeScene } from './globe-scene.js';
 import { StarsScene } from './stars-scene.js';
 import { DiscTunnelScene } from './disc-tunnel-scene.js';
+import { DemonWarpScene } from './demon-warp-scene.js';
 
 const artsyPart1 = new JsDemo({
     width: 640,
@@ -30,6 +31,7 @@ const einstein = new PictureScene('./einstein.png', 2, "#fff", 500, "#000", 12, 
 const sanity2Logo = new PictureScene('./sanity2.png', 2, "#000", 500, "#000", 13, 28, 480);
 const stars = new StarsScene();
 const discTunnel = new DiscTunnelScene();
+const demonWarp = new DemonWarpScene();
 const blank = new EmptyScene('#441010');
 
 await artsyPart1.registerScenes(player,
@@ -68,6 +70,9 @@ await artsyPart1.registerScenes(player,
         scene: discTunnel
     }, {
         from: { songPos: 23, row: 0},
+        scene: demonWarp
+    }, {
+        from: { songPos: 25, row: 0},
         scene: blank
     }
 );

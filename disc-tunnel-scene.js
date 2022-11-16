@@ -1,4 +1,4 @@
-import { sinus, smooth, solidColor, Scene } from './js-demo.js';
+import { sinus, solidColor, Scene } from './js-demo.js';
 
 const discColors = [
     {r : 255, g : 255, b : 255},

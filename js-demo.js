@@ -74,6 +74,7 @@ export class JsDemo {
                         providedDevMode;
     
         const context = canvas.getContext('2d');
+        context.imageSmoothingEnabled = false;
 
         this.canvas = canvas;
         this.context = context;
