@@ -1,5 +1,5 @@
 import { ModPlayer } from 'https://atornblad.se/files/js-mod-player/player.js';
-import { JsDemo } from './js-demo.js';
+import { JsDemo, delay } from './js-demo.js';
 import { IntroTextScene } from './intro-text-scene.js';
 import { BitmapTunnelScene } from './bitmap-tunnel-scene.js';
 import { PictureScene } from './picture-scene.js';
@@ -77,5 +77,11 @@ await artsyPart1.registerScenes(player,
         scene: end
     }
 );
+
+player.watchStop(() => {
+    delay(2000).then(() => {
+        window.location.href = 'part-2/index.html';
+    })
+});
 
 artsyPart1.start();

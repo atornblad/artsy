@@ -42,6 +42,8 @@ export const range = function* (start, end, step = 1) {
     }
 };
 
+export const delay = (ms) => new Promise(resolve => window.setTimeout(resolve, ms));
+
 const genProto = Object.getPrototypeOf(range(0, 10));
 if (!genProto.map) {
     genProto.map = function* (f) {
