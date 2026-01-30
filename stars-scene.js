@@ -196,7 +196,7 @@ export class StarsScene extends Scene {
                 case 0:
                     context.fillStyle = "#999999";
                     context.font = "40px sans-serif";
-                    context.fillText("Anders Marzi Tornblad", 10, 10);
+                    context.fillText("Anders Tornblad", 10, 10);
                     context.fillStyle = "#666666";
                     context.font = "30px sans-serif";
                     context.fillText("JavaScript, 2013", 10, 55);

@@ -1,5 +1,5 @@
 /**
- * Author: Anders Marzi Tornblad
+ * Author: Anders Tornblad
  * Date: 2022-10-23
  * License: Creative Commons Attribution-NonCommercial 4.0 International License
  * 
